@@ -2,7 +2,7 @@ import port.api.props as props
 from port.api.assets import *
 from port.api.commands import (CommandSystemDonate, CommandSystemExit, CommandUIRender)
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import zipfile
 #from ddpinspect import instagram
 
@@ -118,9 +118,7 @@ def prompt_extraction_message(message, percentage):
 
     return props.PropsUIPromptProgress(description, message, percentage)
 
-    #your topics
-    your_topics_file = extractJsonContentFromZipFolder(filename, "your_topics")
-    yourTopics_df = extract_topics_df(your_topics_file)
+    data = []
 
 def get_zipfile(filename):
     try:
@@ -135,15 +133,17 @@ def get_files(zipfile_ref):
     except zipfile.error:
         return []
 
-    #aggregated video views/day
-    videos_viewed_file = extractJsonContentFromZipFolder(filename, "videos_watched")   
-    videoViewsperDay_df = get_videoViewsPerDay(videos_viewed_file)
+        try:
+            target_df = v["extraction_function"](target_file)
+        
+        except:
+            target_df = pd.DataFrame(["Empty"], columns=[str(file)])
+        
+        data.append(target_df)
 
-    data = [yourTopics_df, postViewsperDay_df, videoViewsperDay_df]
 
-    print(data)
+    return data
 
-    return data 
 
 #main content of consent page: displays all data in donation
 
@@ -178,15 +178,12 @@ def prompt_consent(data, meta_data):
 
 
     table_list = []
+    i = 0
 
-    table = props.PropsUIPromptConsentFormTable("your_topics", your_topics_title, data[0])
-    table_list.append(table)
-
-    table = props.PropsUIPromptConsentFormTable("posts_viewed", posts_viewed_title, data[1])
-    table_list.append(table)
-
-    table = props.PropsUIPromptConsentFormTable("videos_watched", videos_watched_title, data[2]) 
-    table_list.append(table)
+    for file, v in extraction_dict.items():
+        table = props.PropsUIPromptConsentFormTable(file, props.Translatable(v["title"]), data[i])
+        table_list.append(table)
+        i += 1
     
     return props.PropsUIPromptConsentForm(table_list, [])
 
@@ -216,18 +213,9 @@ def extractJsonContentFromZipFolder(zip_file_path, pattern):
 
     return targetdict[file_name]
 
-def import_json_toDict(jsonfile):
-    """loads json file as dict"""
-    f = open(jsonfile)
-    json_dict = json.load(f)
-    return json_dict
 
-def extract_topics_df(topics_dict):
-    """takes the content of your_topics jsonfile, extracts topics and returns them as a dataframe"""
-    if topics_dict != None:
-        topics_list = [t['string_map_data']['Name']['value'] for t in topics_dict['topics_your_topics']]
-        topics_df = pd.DataFrame(topics_list, columns=['your_topics'])
-        return topics_df
+
+
 
 def epoch_to_date(epoch_timestamp: str | int) -> str: #thanks ddp-inspector/ddpinspect/src/parserlib/stringparse.py
     """
@@ -237,15 +225,47 @@ def epoch_to_date(epoch_timestamp: str | int) -> str: #thanks ddp-inspector/ddpi
     """
     try:
         epoch_timestamp = int(epoch_timestamp)
-        out = datetime.fromtimestamp(epoch_timestamp, tz=timezone.utc).isoformat()
+        out = datetime.fromtimestamp(epoch_timestamp, tz=timezone(timedelta(hours=1))).isoformat() # timezone = utc + 1
     except (OverflowError, OSError, ValueError, TypeError) as e:
         logger.error("Could not convert epoch time timestamp, %s", e)
         raise CannotConvertEpochTimestamp("Cannot convert epoch timestamp") from e
 
     out = pd.to_datetime(out)
-    return out.date()
+    return str(out.date()) # convertion to string for display in browser
 
+
+# 3 ads_and_topics/ads_clicked -> list of product names per day
+def extract_ads_clicked(ads_clicked_dict):
+    """extract list of product names per day from ads_and_topics/ads_clicked"""
+
+    timestamps = [t['string_list_data'][0]['timestamp'] for t in ads_clicked_dict['impressions_history_ads_clicked']] # get list with timestamps in epoch format
+    dates = [epoch_to_date(t) for t in timestamps] # convert epochs to dates
+    products = [i["title"] for i in ads_clicked_dict['impressions_history_ads_clicked']]
     
+    adds_clicked_df = pd.DataFrame(
+        {"date": dates,
+        "ads_clicked": products}
+    )
+    aggregated_df = adds_clicked_df.groupby('date')['ads_clicked'].agg(list).reset_index()
+    return aggregated_df
+
+# 4 ads_and_topics/ads_viewed -> list of authors per day
+def extract_ads_viewed(ads_viewed_dict):
+    """extract list of authors per day from ads_and_topics/ads_viewed"""
+
+
+    timestamps = [t['string_map_data']["Time"]['timestamp'] for t in ads_viewed_dict['impressions_history_ads_seen']] # get list with timestamps in epoch format
+    dates = [epoch_to_date(t) for t in timestamps] # convert epochs to dates
+    authors = [i["string_map_data"]["Author"]["value"] for i in ads_viewed_dict['impressions_history_ads_seen']]
+    
+    adds_viewed_df = pd.DataFrame(
+        {"date": dates,
+        "authors_seen": authors}
+    )
+    aggregated_df = adds_viewed_df.groupby('date')['authors_seen'].agg(list).reset_index()
+    return aggregated_df
+
+# 5 ads_and_topics/posts_viewed -> count per day
 # probably want to restrict the days to those within the study period?
 def get_postViewsPerDay(posts_viewed_dict):
     """takes content of posts_viewed json file and returns dataframe with number of viewed posts/day"""
@@ -255,6 +275,7 @@ def get_postViewsPerDay(posts_viewed_dict):
     aggregated_df = postViewedDates_df.groupby(["date"])["date"].size() # count number of rows per day
     return aggregated_df.reset_index(name='postsViewed_count')
 
+# 8 ads_and_topics/videos_watched -> count per day
 # maybe combine results from get_postViewsPerDay and get_videoViewsPerDay in one dataframe? columns:  date | postsViewed_count | videosViewed_count
 def get_videoViewsPerDay(videos_watched_dict):
     """takes content of videos_watched json file and returns dataframe with number of viewed posts/day"""
@@ -264,6 +285,65 @@ def get_videoViewsPerDay(videos_watched_dict):
     aggregated_df = videosViewedDates_df.groupby(["date"])["date"].size() # count number of rows per day
     return aggregated_df.reset_index(name='videosViewed_count')
 
+# 11 instagram_ads_and_businesses/subscription_for_no_ads -> dummy whether user has such a subscription
+def extract_subscription_for_no_ads(subscription_for_no_ads_dict):
+    """return whether user has subscription for ad-free usage"""
+    
+    addfree_subscription = (subscription_for_no_ads_dict != None)
+    return pd.DataFrame([addfree_subscription], columns=['adfree_substription'])
+
+# 47 your_topics -> topics list
+def extract_topics_df(topics_dict):
+    """takes the content of your_topics jsonfile, extracts topics and returns them as a dataframe"""
+    
+    topics_list = [t['string_map_data']['Name']['value'] for t in topics_dict['topics_your_topics']]
+    topics_df = pd.DataFrame(topics_list, columns=['your_topics'])
+    return topics_df
+
+extraction_dict = {
+    "ads_clicked": {
+        "extraction_function": extract_ads_clicked,
+        "title": {
+            "en": "Product names (ads) clicked per day", 
+            "nl": "Inhoud zip bestand"
+        }
+    }, 
+    "ads_viewed": {
+        "extraction_function": extract_ads_viewed,
+        "title": {
+            "en": "Clicked ads' authors per day", 
+            "nl": "Inhoud zip bestand"
+        }
+    },
+    "posts_viewed": {
+        "extraction_function": get_postViewsPerDay,
+        "title": {
+            "en": "Number of posts viewed each day in the last week",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+    "videos_watched": {
+        "extraction_function": get_videoViewsPerDay, 
+        "title": {
+            "en": "Number of videos watched each day in the last week",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+    "extract_subscription_for_no_ads": {
+        "extraction_function": extract_subscription_for_no_ads,
+        "title": {
+            "en": "Ad-free subscription?", 
+            "nl": "Inhoud zip bestand"
+        }
+    },
+    "your_topics": {
+        "extraction_function": extract_topics_df,
+        "title": {
+            "en": "Your Topics inferred by Instagram",
+            "nl": "Inhoud zip bestand"
+            }
+    }
+}
 
 # unedited from PORT, best leave like that :)
 
