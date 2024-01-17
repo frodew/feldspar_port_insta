@@ -233,6 +233,112 @@ def extract_subscription_for_no_ads(subscription_for_no_ads_dict):
     addfree_subscription = (subscription_for_no_ads_dict != None)
     return pd.DataFrame([addfree_subscription], columns=['adfree_substription'])
 
+
+# 15 followers_and_following/blocked_accounts -> count
+# so far no example file...
+def extract_blocked_accounts(blocked_accounts_dict):
+    """extract count of blocked accounts"""
+    
+    if blocked_accounts_dict == None:
+        count = 0
+    else:
+        count = "Empty" # include extraction from existing file here!!
+    return pd.DataFrame([count], columns=['blocked_accounts_count'])
+
+# 16 followers_and_following/close_friends -> count
+def extract_close_friends(close_friends_dict):
+    """extract count of close friends"""
+    if close_friends_dict == None:
+        count = 0
+    else:
+        friends = [f for f in close_friends_dict["relationships_close_friends"]]
+        count = len(friends)
+
+    return pd.DataFrame([count], columns=['close_friends_count'])
+
+# 17 followers_and_following/followers_1 -> count
+def extract_followers_1(followers_1_dict):
+    """extract count of followers"""
+
+    if followers_1_dict == None:
+        count = 0
+
+    else:
+        count = len(followers_1_dict)
+    return pd.DataFrame([count], columns=['followers_count'])
+
+# 18 followers_and_following/following -> count
+def extract_following(following_dict):
+    """extract count of accounts person is following"""
+    if following_dict == None:
+        count = 0
+    else:
+        following = [f for f in following_dict["relationships_following"]]
+        count = len(following)
+
+    return pd.DataFrame([count], columns=['following_count'])
+
+# 19 followers_and_following/follow_requests_you've_received -> count
+def extract_follow_requests_youve_received(follow_requests_youve_received_dict):
+    """extract count of received follow requests"""
+    if follow_requests_youve_received_dict == None:
+        count = 0
+    else:
+        requests = [f for f in follow_requests_youve_received_dict["relationships_follow_requests_received"]]
+        count = len(requests)
+
+    return pd.DataFrame([count], columns=['received_follow_requests_count'])
+
+# 20 followers_and_following/hide_story_from -> count
+# no example file!
+def extract_hide_story_from(hide_story_from_dict):
+    """extract count of accounts story is hidden from"""
+
+    if hide_story_from_dict == None:
+        count = 0
+    else:
+        count = "Empty" # include extraction from existing file here!!
+    return pd.DataFrame([count], columns=['hide_story_from_count'])
+
+# 21 followers_and_following/pending_follow_requests -> count
+def extract_pending_follow_requests(pending_follow_requests_dict):
+    """extract count of pending follow requests"""
+    if pending_follow_requests_dict == None:
+        count = 0
+    else:
+        pending = [f for f in pending_follow_requests_dict["relationships_follow_requests_sent"]]
+        count = len(pending)
+    return pd.DataFrame([count], columns=['pending_follow_requests_count'])
+
+# 23 followers_and_following/recently_unfollowed_accounts -> count
+# no example file!
+def extract_recently_unfollowed_accounts(recently_unfollowed_accounts_dict):
+    """extract count of recently unfollowed accounts"""
+    if recently_unfollowed_accounts_dict == None:
+        count = 0
+    else:
+        count = "Empty" # include extraction from existing file here!!
+    return pd.DataFrame([count], columns=['recently_unfollowed_accounts_count'])
+
+# 24 followers_and_following/removed_suggestions -> count
+def extract_removed_suggestions(removed_suggestions_dict):
+    """extract count of removed suggestions"""
+    if removed_suggestions_dict == None:
+        suggestions = 0 # assume there are no suggestions if file doesnt exist
+    else:
+        suggestions = len([f for f in removed_suggestions_dict["relationships_dismissed_suggested_users"]])
+    return pd.DataFrame([suggestions], columns=['removed_suggestions_count'])
+
+# 25 followers_and_following/restricted_accounts -> count
+# no example file!
+def extract_restricted_accounts(restricted_accounts_dict):
+    """extract count of restricted accounts"""
+    if restricted_accounts_dict == None:
+        count = 0
+    else:
+        count = "Empty" # include extraction from existing file here!!
+    return pd.DataFrame([count], columns=['restricted_accounts_count'])
+
 # 47 your_topics -> topics list
 def extract_topics_df(topics_dict):
     """takes the content of your_topics jsonfile, extracts topics and returns them as a dataframe"""
@@ -270,12 +376,82 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
-    "extract_subscription_for_no_ads": {
+    "subscription_for_no_ads": {
         "extraction_function": extract_subscription_for_no_ads,
         "title": {
             "en": "Ad-free subscription?", 
             "nl": "Inhoud zip bestand"
         }
+    },
+    "blocked_accounts": {
+        "extraction_function": extract_blocked_accounts,
+        "title": {
+            "en": "Number of accounts you have blocked",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "close_friends": {
+        "extraction_function": extract_close_friends,
+        "title": {
+            "en": "Number of close friends",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "followers_1": {
+        "extraction_function": extract_followers_1,
+        "title": {
+            "en": "Number of followers",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "followers_and_following/following": {
+        "extraction_function": extract_following,
+        "title": {
+            "en": "Number of accounts you are following",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "follow_requests_you've_received": {
+        "extraction_function": extract_follow_requests_youve_received,
+        "title": {
+            "en": "Number of follow requests you have received",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "hide_story_from": {
+        "extraction_function": extract_hide_story_from,
+        "title": {
+            "en": "Number of account you have hidden your story from",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "pending_follow_requests": {
+        "extraction_function": extract_pending_follow_requests,
+        "title": {
+            "en": "Number of your pending follow requests",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "recently_unfollowed_accounts": {
+        "extraction_function": extract_recently_unfollowed_accounts,
+        "title": {
+            "en": "Number of accounts you recently unfollowed",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "removed_suggestions": {
+        "extraction_function": extract_removed_suggestions,
+        "title": {
+            "en": "Number of accounts that you've removed from your suggestions",
+            "nl": "Inhoud zip bestand"
+            }
+    },
+    "restricted_accounts": {
+        "extraction_function": extract_restricted_accounts,
+        "title": {
+            "en": "Number of accounts that you've restricted",
+            "nl": "Inhoud zip bestand"
+            }
     },
     "your_topics": {
         "extraction_function": extract_topics_df,
