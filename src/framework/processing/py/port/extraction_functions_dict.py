@@ -1,6 +1,6 @@
 from port.extraction_functions import *
 
-# defines which extraction functions are looped over and what titles are displayed
+# defines which extraction functions are used and what titles are displayed
 
 extraction_dict = {
     "ads_clicked": {
@@ -108,11 +108,169 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
             }
     },
+
+    "notification_of_privacy_policy_updates": {
+        "extraction_function": extract_notification_of_privacy_policy_updates,
+        "title": {
+            "en": "When did you view updates to the Meta Privacy Policy?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "account_information.json": {
+        "extraction_function": extract_account_information,
+        "title": {
+            "en": "Have you enabled contact syncing?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "personal_information.json": {
+        "extraction_function": extract_personal_information,
+        "title": {
+            "en": "Do you have a profile image, email, phone, and a private account?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "profile_changes": {
+        "extraction_function": extract_profile_changes,
+        "title": {
+            "en": "When did you change your personal information?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "comments_allowed_from": {
+        "extraction_function": extract_comments_allowed_from,
+        "title": {
+            "en": "Which accounts do you allow comments from?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
     "your_topics": {
         "extraction_function": extract_topics_df,
         "title": {
             "en": "Your Topics inferred by Instagram",
             "nl": "Inhoud zip bestand"
             }
+    },
+
+
+    "account_privacy_changes": {
+        "extraction_function": extract_account_privacy_changes,
+        "title": {
+            "en": "When did you switch your account to being public/private?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "login_activity": {
+        "extraction_function": extract_login_activity,
+        "title": {
+            "en": "When and with which user agent did you log in to Instagram?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "logout_activity": {
+        "extraction_function": extract_logout_activity,
+        "title": {
+            "en": "When and with which user agent did you log out of Instagram?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "recently_viewed_items": {
+        "extraction_function": extract_recently_viewed_items,
+        "title": {
+            "en": "Which shopping items have you recently viewed?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "post_comments_1": {
+        "extraction_function": extract_post_comments_1,
+        "title": {
+            "en": "How often did you comment on posts per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "reels_comments": {
+        "extraction_function": extract_reels_comments,
+        "title": {
+            "en": "How often did you comment on reels per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "liked_comments": {
+        "extraction_function": extract_liked_comments,
+        "title": {
+            "en": "How often did you like comments per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "liked_posts": {
+        "extraction_function": extract_liked_posts,
+        "title": {
+            "en": "How often did you like posts per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "emoji_sliders": {
+        "extraction_function": extract_emoji_sliders,
+        "title": {
+            "en": "How often did you react to an emoji slider in a story per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "polls": {
+        "extraction_function": extract_polls,
+        "title": {
+            "en": "How often did you react to a poll in a story per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "questions": {
+        "extraction_function": extract_questions,
+        "title": {
+            "en": "How often did you answer a question in a story per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
+    "quizzes": {
+        "extraction_function": extract_quizzes,
+        "title": {
+            "en": "How often did you answer a poll in story per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "story_likes": {
+        "extraction_function": extract_story_likes,
+        "title": {
+            "en": "How often did you like a story per day?",
+            "nl": "Inhoud zip bestand"
+        }
     }
+
 }
