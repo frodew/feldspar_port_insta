@@ -3,6 +3,7 @@ from port.api.assets import *
 from port.api.commands import (CommandSystemDonate, CommandSystemExit, CommandUIRender)
 
 from datetime import datetime, timezone, timedelta
+
 import zipfile
 #from ddpinspect import instagram
 
@@ -140,7 +141,8 @@ def get_files(zipfile_ref):
         try:
             target_df = v["extraction_function"](target_file)
         
-        except:
+        except Exception as e:
+            print(e)
             target_df = pd.DataFrame(["Empty"], columns=[str(file)])
         
         data.append(target_df)
