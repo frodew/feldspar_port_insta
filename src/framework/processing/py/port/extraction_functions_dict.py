@@ -41,21 +41,21 @@ extraction_dict = {
     "blocked_accounts": {
         "extraction_function": extract_blocked_accounts,
         "title": {
-            "en": "Number of accounts you have blocked",
+            "en": "Number of accounts you have blocked by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "close_friends": {
         "extraction_function": extract_close_friends,
         "title": {
-            "en": "Number of close friends",
+            "en": "Number of close friends by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "followers_1": {
         "extraction_function": extract_followers_1,
         "title": {
-            "en": "Number of followers",
+            "en": "Number of followers by day",
             "nl": "Inhoud zip bestand"
             }
     },
@@ -69,42 +69,42 @@ extraction_dict = {
     "follow_requests_you've_received": {
         "extraction_function": extract_follow_requests_youve_received,
         "title": {
-            "en": "Number of follow requests you have received",
+            "en": "Number of follow requests you have received by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "hide_story_from": {
         "extraction_function": extract_hide_story_from,
         "title": {
-            "en": "Number of account you have hidden your story from",
+            "en": "Number of account you have hidden your story from by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "pending_follow_requests": {
         "extraction_function": extract_pending_follow_requests,
         "title": {
-            "en": "Number of your pending follow requests",
+            "en": "Number of your pending follow requests by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "recently_unfollowed_accounts": {
         "extraction_function": extract_recently_unfollowed_accounts,
         "title": {
-            "en": "Number of accounts you recently unfollowed",
+            "en": "Number of accounts you recently unfollowed by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "removed_suggestions": {
         "extraction_function": extract_removed_suggestions,
         "title": {
-            "en": "Number of accounts that you've removed from your suggestions",
+            "en": "Number of accounts that you've removed from your suggestions by day",
             "nl": "Inhoud zip bestand"
             }
     },
     "restricted_accounts": {
         "extraction_function": extract_restricted_accounts,
         "title": {
-            "en": "Number of accounts that you've restricted",
+            "en": "Number of accounts that you've restricted by day",
             "nl": "Inhoud zip bestand"
             }
     },
@@ -128,7 +128,7 @@ extraction_dict = {
     "personal_information.json": {
         "extraction_function": extract_personal_information,
         "title": {
-            "en": "Do you have a profile image, email, phone, and a private account?",
+            "en": "Do you have a profile image, email, phone, a private account, and do you use your real name?",
             "nl": "Inhoud zip bestand"
         }
     },
@@ -145,6 +145,14 @@ extraction_dict = {
         "extraction_function": extract_comments_allowed_from,
         "title": {
             "en": "Which accounts do you allow comments from?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "comments_blocked_from": {
+        "extraction_function": extract_comments_blocked_from,
+        "title": {
+            "en": "Number of account you blocked from commenting.",
             "nl": "Inhoud zip bestand"
         }
     },
@@ -184,6 +192,13 @@ extraction_dict = {
         }
     },
 
+    "signup_information": {
+        "extraction_function": extract_signup_information,
+        "title": {
+            "en": "Did you use a real name to signup on Instagram?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
 
     "recently_viewed_items": {
         "extraction_function": extract_recently_viewed_items,
@@ -225,6 +240,14 @@ extraction_dict = {
         "extraction_function": extract_liked_posts,
         "title": {
             "en": "How often did you like posts per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "countdowns": {
+        "extraction_function": extract_countdowns,
+        "title": {
+            "en": "How often did you react to an countdown in a story per day?",
             "nl": "Inhoud zip bestand"
         }
     },
