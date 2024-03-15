@@ -11,6 +11,8 @@ onmessage = (event) => {
 
     case 'firstRunCycle':
       pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`)
+      //load external file to use in pyodide
+      loadAndUnpackZipArchive("/vornamen.zip");
       runCycle(null)
       break
 
@@ -103,4 +105,24 @@ function installPortPackage() {
     await micropip.install("../../port-0.0.0-py3-none-any.whl", deps=False)
     import port
   `);  
+}
+
+// add external txt to use in pyodide
+
+async function loadAndUnpackZipArchive(zipUrl) {
+    try {
+        // Fetch the zip archive
+        let zipResponse = await fetch(zipUrl);
+        
+        // Convert binary data to ArrayBuffer
+        let zipBinary = await zipResponse.arrayBuffer();
+        
+        // Unpack the zip archive into Pyodide virtual file system
+        pyodide.unpackArchive(zipBinary, "zip");
+        
+        console.log("Zip archive unpacked successfully.");
+        
+    } catch (error) {
+        console.error("Error loading and unpacking zip archive:", error);
+    }
 }

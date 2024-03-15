@@ -34,4 +34,4 @@ const observer = new ResizeObserver(() => {
   window.parent.postMessage({ action, height }, '*')
 })
 
-observer.observe(window.document.body)
+observer.observe(window.document.body);

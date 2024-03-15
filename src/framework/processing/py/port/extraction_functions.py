@@ -1,5 +1,7 @@
 import pandas as pd
 from datetime import datetime, timezone, timedelta
+import re
+
 
 # helper functions -----------------------------
 
@@ -80,45 +82,44 @@ def get_videoViewsPerDay(videos_watched_dict):
 def extract_subscription_for_no_ads(subscription_for_no_ads_dict):
     """return whether user has subscription for ad-free usage"""
     
-    addfree_subscription = (subscription_for_no_ads_dict != None)
-    return pd.DataFrame([addfree_subscription], columns=['adfree_subscription'])
+    value = None # return None if key isnt known
 
+    if subscription_for_no_ads_dict["label_values"][0]["value"] == "Inaktiv":
+        value = False
+    else:
+        value = True
 
-# 15 followers_and_following/blocked_accounts -> count
+    return pd.DataFrame([value], columns=['adfree_subscription'])
+
+# 15 followers_and_following/blocked_accounts -> count per day
 def extract_blocked_accounts(blocked_accounts_dict):
-    """extract count of blocked accounts"""
-    
-    if blocked_accounts_dict == None:
-        count = 0
-    else:
-        count = len([a for a in blocked_accounts_dict["relationships_blocked_users"]])
-        
-    return pd.DataFrame([count], columns=['blocked_accounts_count'])
+    """extract count of blocked accounts per day"""
+   
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in blocked_accounts_dict["relationships_blocked_users"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
+    return aggregated_df.reset_index(name='blocked_accounts_count')
 
-# 16 followers_and_following/close_friends -> count
+# 16 followers_and_following/close_friends -> count per day
 def extract_close_friends(close_friends_dict):
-    """extract count of close friends"""
-    if close_friends_dict == None:
-        count = 0
-    else:
-        friends = [f for f in close_friends_dict["relationships_close_friends"]]
-        count = len(friends)
+    """extract count of close friends per day"""
 
-    return pd.DataFrame([count], columns=['close_friends_count'])
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in close_friends_dict["relationships_close_friends"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
+    return aggregated_df.reset_index(name='close_friends_count') 
 
-# 17 followers_and_following/followers_1 -> count
+# 17 followers_and_following/followers_1 -> count per day
 def extract_followers_1(followers_1_dict):
-    """extract count of followers"""
+    """extract count of followers per day"""
 
-    if followers_1_dict == None:
-        count = 0
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in followers_1_dict]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-    else:
-        count = len(followers_1_dict)
-    return pd.DataFrame([count], columns=['followers_count'])
-
+    return aggregated_df.reset_index(name='followers_dict')
 
 # 18 followers_and_following/following -> count
 def extract_following(following_dict):
@@ -132,66 +133,65 @@ def extract_following(following_dict):
     return pd.DataFrame([count], columns=['following_count'])
 
 
-# 19 followers_and_following/follow_requests_you've_received -> count
+# 19 followers_and_following/follow_requests_you've_received -> count per day
 def extract_follow_requests_youve_received(follow_requests_youve_received_dict):
-    """extract count of received follow requests"""
-    if follow_requests_youve_received_dict == None:
-        count = 0
-    else:
-        requests = [f for f in follow_requests_youve_received_dict["relationships_follow_requests_received"]]
-        count = len(requests)
+    """extract count of received follow requests per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in follow_requests_youve_received_dict["relationships_follow_requests_received"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-    return pd.DataFrame([count], columns=['received_follow_requests_count'])
+    return aggregated_df.reset_index(name='received_follow_requests_count')
 
-# 20 followers_and_following/hide_story_from -> count
+# 20 followers_and_following/hide_story_from -> count per day
 def extract_hide_story_from(hide_story_from_dict):
-    """extract count of accounts story is hidden from"""
+    """extract count of accounts story is hidden from per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in hide_story_from_dict["relationships_hide_stories_from"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-    if hide_story_from_dict == None:
-        count = 0
-    else:
-        count = len([x for x in hide_story_from_dict["relationships_hide_stories_from"]])
-    return pd.DataFrame([count], columns=['hide_story_from_count'])
+    return aggregated_df.reset_index(name='hide_story_from_count')
 
-# 21 followers_and_following/pending_follow_requests -> count
+# 21 followers_and_following/pending_follow_requests -> count per day
 def extract_pending_follow_requests(pending_follow_requests_dict):
-    """extract count of pending follow requests"""
-    if pending_follow_requests_dict == None:
-        count = 0
-    else:
-        pending = [f for f in pending_follow_requests_dict["relationships_follow_requests_sent"]]
-        count = len(pending)
-    return pd.DataFrame([count], columns=['pending_follow_requests_count'])
+    """extract count of pending follow requests per day"""
 
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in pending_follow_requests_dict['relationships_follow_requests_sent']]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-# 23 followers_and_following/recently_unfollowed_accounts -> count
+    return aggregated_df.reset_index(name='pending_follow_requests_count')
+
+# 23 followers_and_following/recently_unfollowed_accounts -> count per day
 def extract_recently_unfollowed_accounts(recently_unfollowed_accounts_dict):
-    """extract count of recently unfollowed accounts"""
-    if recently_unfollowed_accounts_dict == None:
-        count = 0
-    else:
-        count = len([x for x in recently_unfollowed_accounts_dict["relationships_unfollowed_users"]])
-    return pd.DataFrame([count], columns=['recently_unfollowed_accounts_count'])
+    """extract count of recently unfollowed accounts per day"""
 
-# 24 followers_and_following/removed_suggestions -> count
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in recently_unfollowed_accounts_dict["relationships_unfollowed_users"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='recently_unfollowed_accounts_count')
+
+# 24 followers_and_following/removed_suggestions -> count per day
 def extract_removed_suggestions(removed_suggestions_dict):
-    """extract count of removed suggestions"""
-    if removed_suggestions_dict == None:
-        suggestions = 0 # assume there are no suggestions if file doesnt exist
-    else:
-        suggestions = len([f for f in removed_suggestions_dict["relationships_dismissed_suggested_users"]])
-    return pd.DataFrame([suggestions], columns=['removed_suggestions_count'])
+    """extract count of removed suggestions per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in removed_suggestions_dict["relationships_dismissed_suggested_users"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
+    return aggregated_df.reset_index(name='removed_suggestions_count') 
 
-# 25 followers_and_following/restricted_accounts -> count
+# 25 followers_and_following/restricted_accounts -> count per day
 def extract_restricted_accounts(restricted_accounts_dict):
-    """extract count of restricted accounts"""
-    if restricted_accounts_dict == None:
-        count = 0
-    else:
-        count = len([f for f in restricted_accounts_dict["relationships_restricted_users"]])
-    return pd.DataFrame([count], columns=['restricted_accounts_count'])
+    """extract count of restricted accounts per day"""
 
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in restricted_accounts_dict["relationships_restricted_users"]]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='restricted_accounts_count')
 
 # 28 policy_updates_and_permissions/notification_of_privacy_policy_updates-> day and value
 def extract_notification_of_privacy_policy_updates(notification_of_privacy_policy_updates_dict):
@@ -253,12 +253,50 @@ def extract_personal_information(personal_information_dict):
             private_account = personal_information_dict["profile_user"][0]['string_map_data'][k]['value']
             break         
 
+    """extract used name and compare to list if real name"""
     
+    name_to_check = None 
+    real_name = False
+
+    for k in ['Name']: # keys are language specific
+        if k in personal_information_dict["profile_user"][0]['string_map_data']:
+            name_to_check = personal_information_dict["profile_user"][0]['string_map_data'][k]['value']
+            break 
+ 
+    
+    print(name_to_check)
+    
+    #split name at whitespace, dot, or underscore
+    def split_name(name):
+        parts = re.split(r'[\s._]+', name)
+        parts = [part.strip() for part in parts if part.strip()]
+        return parts
+    
+    names_to_check = split_name(name_to_check)
+    
+    print(names_to_check)
+
+    def check_name(names_to_check):
+        with open("vornamen.txt", "r") as file:
+            # Read the names from the file and create a set
+            names_set = {line.strip() for line in file}
+        
+        # Check if any name in names_to_check matches the names in the file
+        for name in names_to_check:
+            if name in names_set:
+                return True  # Return True if any match is found
+            
+        return False  # Return False if no match is found
+
+    real_name = check_name(names_to_check)
+
     result =pd.DataFrame(
                 {"profile_image": [profile_image],
                 "email": [email], 
                 "phone": [phone], 
-                "private_account": [private_account]})
+                "private_account": [private_account],
+                "real_name_in_use": [real_name]
+                 })
 
     return result
 
@@ -291,6 +329,15 @@ def extract_comments_allowed_from(comments_allowed_from_dict):
             break  
 
     return pd.DataFrame([value], columns=['comments_allowed_from'])
+
+# 45 comments_blocked_from -> count
+def extract_comments_blocked_from(comments_blocked_from_dict):
+    """extract count of blocked users from comment"""
+    if comments_blocked_from_dict == None:
+        count = 0
+    else:
+        count = len([f for f in comments_blocked_from_dict["settings_blocked_commenters"]])
+    return pd.DataFrame([count], columns=['comments_blocked_from'])
 
 
 # 47 your_topics -> topics list
@@ -366,6 +413,43 @@ def extract_logout_activity(logout_activity_dict):
 
     return logout_df
 
+# 53 signup_information -> dummy if real name is used
+def extract_signup_information(signup_information_dict):
+    """extract used name and compare to list if real name"""
+    
+    name_to_check = None 
+    real_name = False
+
+    for k in ['Username', 'Benutzername']: # keys are language specific
+        if k in signup_information_dict['account_history_registration_info'][0]["string_map_data"]:
+            name_to_check = signup_information_dict['account_history_registration_info'][0]["string_map_data"][k]["value"]
+            break  
+    
+    #split name at whitespace, dot, or underscore
+    def split_name(name):
+        parts = re.split(r'[\s._]+', name)
+        parts = [part.strip() for part in parts if part.strip()]
+        return parts
+    
+    names_to_check = split_name(name_to_check)
+    
+    print(names_to_check)
+
+    def check_name(names_to_check):
+        with open("vornamen.txt", "r") as file:
+            # Read the names from the file and create a set
+            names_set = {line.strip() for line in file}
+        
+        # Check if any name in names_to_check matches the names in the file
+        for name in names_to_check:
+            if name in names_set:
+                return True  # Return True if any match is found
+            
+        return False  # Return False if no match is found
+
+    real_name = check_name(names_to_check)
+
+    return pd.DataFrame([real_name], columns=['real_name_signup'])
 
 # 55 recently_viewed_items -> list of items
 def extract_recently_viewed_items(recently_viewed_items_dict):
@@ -416,6 +500,16 @@ def extract_liked_posts(liked_posts_dict):
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
     return aggregated_df.reset_index(name='likedPosts_count')
+
+# 79 countdowns-> count per day
+def extract_countdowns(countdowns_dict):
+    """extract count of reaction to countdowns in a story per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in countdowns_dict['story_activities_countdowns']]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='countdowns_count')
 
 
 # 80 emoji_sliders -> count per day
