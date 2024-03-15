@@ -5,6 +5,8 @@ from port.api.commands import (CommandSystemDonate, CommandSystemExit, CommandUI
 from datetime import datetime, timezone, timedelta
 
 import zipfile
+import cv2
+import numpy as np
 #from ddpinspect import instagram
 
 import pandas as pd
@@ -139,8 +141,11 @@ def get_files(zipfile_ref):
         return []
 
         try:
-            target_df = v["extraction_function"](target_file)
-        
+            if "picture_info" in v:  # Check if picture_info is required for this extraction function
+                target_df = v["extraction_function"](target_file, picture_info)
+            else:
+                target_df = v["extraction_function"](target_file)
+
         except Exception as e:
             print(e)
             target_df = pd.DataFrame(["Empty"], columns=[str(file)])
