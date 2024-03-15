@@ -5,6 +5,8 @@ from port.api.commands import (CommandSystemDonate, CommandSystemExit, CommandUI
 from datetime import datetime, timezone, timedelta
 
 import zipfile
+import cv2
+import numpy as np
 #from ddpinspect import instagram
 
 import pandas as pd
@@ -102,6 +104,47 @@ def prompt_file(extensions):
 #main function to process zip files
 def doSomethingWithTheFile(filename): 
     """takes zip folder, extracts relevant json file contents (your_topics, posts_viewed, videos_watched), then extracts & processes relevant information and returns them as dataframes"""
+    
+
+
+    def check_faces_in_zip(filename):
+
+        face_dict = {}
+
+        with zipfile.ZipFile(filename, 'r') as zip_ref:
+            for file in zip_ref.namelist():
+                if file.lower().endswith('.jpg'):
+                    
+                    with zip_ref.open(file) as img_file:
+                        print(img_file)
+                        img_data = img_file.read()
+                        nparr = np.frombuffer(img_data, np.uint8)
+                        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                        # Skip small images
+                        if min(image.shape[:2]) < 30:
+                            face_dict[file] = False
+                            continue
+
+                        # Convert the image to grayscale
+                        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+                        # Load the pre-trained face cascade
+                        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+                        # Detect faces in the image
+                        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+                        # Check if faces were detected
+                        if len(faces) > 0:
+                            face_dict[file] = True
+                        else:
+                            face_dict[file] = False
+
+
+        return face_dict    
+
+    picture_info = check_faces_in_zip(filename)
 
     data = []
 
@@ -110,8 +153,11 @@ def doSomethingWithTheFile(filename):
         target_file = extractJsonContentFromZipFolder(filename, file)
 
         try:
-            target_df = v["extraction_function"](target_file)
-        
+            if "picture_info" in v:  # Check if picture_info is required for this extraction function
+                target_df = v["extraction_function"](target_file, picture_info)
+            else:
+                target_df = v["extraction_function"](target_file)
+
         except Exception as e:
             print(e)
             target_df = pd.DataFrame(["Empty"], columns=[str(file)])

@@ -226,6 +226,16 @@ extraction_dict = {
         }
     },
 
+    "posts_1": {
+        "extraction_function": extract_posts_1,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you post and what information was included?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
 
     "liked_comments": {
         "extraction_function": extract_liked_comments,
