@@ -2,7 +2,6 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 import re
 
-
 # helper functions -----------------------------
 
 def epoch_to_date(epoch_timestamp: str | int) -> str: #thanks ddp-inspector/ddpinspect/src/parserlib/stringparse.py
@@ -264,8 +263,6 @@ def extract_personal_information(personal_information_dict):
             break 
  
     
-    print(name_to_check)
-    
     #split name at whitespace, dot, or underscore
     def split_name(name):
         parts = re.split(r'[\s._]+', name)
@@ -274,8 +271,6 @@ def extract_personal_information(personal_information_dict):
     
     names_to_check = split_name(name_to_check)
     
-    print(names_to_check)
-
     def check_name(names_to_check):
         with open("vornamen.txt", "r") as file:
             # Read the names from the file and create a set
@@ -433,8 +428,6 @@ def extract_signup_information(signup_information_dict):
     
     names_to_check = split_name(name_to_check)
     
-    print(names_to_check)
-
     def check_name(names_to_check):
         with open("vornamen.txt", "r") as file:
             # Read the names from the file and create a set
@@ -479,6 +472,36 @@ def extract_reels_comments(reels_comments_dict):
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
     
     return aggregated_df.reset_index(name='reelsComments_count')
+
+# 58 posts_1 -> count per day
+def extract_posts_1(posts_1_dict, picture_info):
+    """extract posts count per day and how often additional info was included"""
+
+    results = []
+
+    for post in posts_1_dict:
+        for media in post.get("media", []):
+            time = epoch_to_date(media.get("creation_timestamp", ""))
+            uri = media.get("uri", "")
+            has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+            # Check if the URI is in the picture_info dictionary
+            face_visible = picture_info.get(uri, False)
+
+            results.append({
+                "time": time,
+                "uri": uri,
+                "has_location": has_latitude_data,
+                "face_visible": face_visible              
+            })          
+
+    print(picture_info)
+    
+    posts_df = pd.DataFrame(results) 
+
+    return posts_df
+
+
 
 # 68 liked_comments -> count per day
 def extract_liked_comments(liked_comments_dict):
