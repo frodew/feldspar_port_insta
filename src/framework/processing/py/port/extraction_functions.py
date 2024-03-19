@@ -299,19 +299,26 @@ def extract_personal_information(personal_information_dict):
 # 43 personal_information/profile_changes 43 -> day and what was changed
 def extract_profile_changes(profile_changes_dict):
     """extract day and what was changed"""
-    
+
     changes = [t["string_map_data"] for t in profile_changes_dict['profile_profile_change']]
-    change_values = [t["Changed"]['value'] for t in changes]
-    change_dates = [epoch_to_date(t['Change Date']["timestamp"]) for t in changes]
+
+    for k in ["Changed", "Ge\u00c3\u00a4ndert"]: # keys are language specific
+        if any(k in d for d in changes):
+            changed_values = [t[k]['value'] for t in changes]
+            break
+
+    for k in ["Change Date", "Datum \u00c3\u00a4ndern"]: # keys are language specific
+        if any(k in d for d in changes):
+            changed_dates = [epoch_to_date(t[k]['timestamp']) for t in changes]
+            break
 
     changes_df = pd.DataFrame(
-        {"date": change_dates,
-        "changes_made": change_values}
-    )
+        {
+            "date": changed_dates,
+            "changes_made": changed_values
+        })
     
-    aggregated_df = changes_df.groupby('date')['changes_made'].agg(list).reset_index()
-    
-    return aggregated_df
+    return changes_df
 
 
 # 44 comments_allowed_from -> value
@@ -473,7 +480,32 @@ def extract_reels_comments(reels_comments_dict):
     
     return aggregated_df.reset_index(name='reelsComments_count')
 
-# 58 posts_1 -> count per day
+# 58 archived_posts -> count per day
+def extract_archived_posts(archived_posts_dict, picture_info):
+    """extract archived posts count per day and how often additional info was included"""
+
+    results = []
+
+    for post in archived_posts_dict.get("ig_archived_post_media", []):
+        for media in post.get("media", []):
+            time = epoch_to_date(media.get("creation_timestamp", ""))
+            uri = media.get("uri", "")
+            has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+            # Check if the URI is in the picture_info dictionary
+            face_visible = picture_info.get(uri, False)
+
+            results.append({
+                "time": time,
+                "has_location": has_latitude_data,
+                "face_visible": face_visible              
+            })          
+
+    archived_posts_df = pd.DataFrame(results) 
+
+    return archived_posts_df
+
+# 59 posts_1 -> count per day
 def extract_posts_1(posts_1_dict, picture_info):
     """extract posts count per day and how often additional info was included"""
 
@@ -490,18 +522,80 @@ def extract_posts_1(posts_1_dict, picture_info):
 
             results.append({
                 "time": time,
-                "uri": uri,
                 "has_location": has_latitude_data,
                 "face_visible": face_visible              
             })          
 
-    print(picture_info)
-    
     posts_df = pd.DataFrame(results) 
 
     return posts_df
 
+# 60 profile_photos -> dummy if face
+def extract_profile_photos(profile_photos_dict, picture_info):
+    """extract profile photo info if face is included"""
 
+    uri = profile_photos_dict.get("ig_profile_picture", [])[0].get("uri", "")
+
+    # Check if the URI is in the picture_info dictionary
+    face_visible = picture_info.get(uri, False)
+
+    face_in_picture = True if face_visible >=1 else False 
+
+    return pd.DataFrame([face_in_picture], columns=['face_in_picture'])
+
+# 61 recently_deleted_content -> count per day
+def extract_recently_deleted_content(recently_deleted_content_dict, picture_info):
+    """extract recently deleted posts count per day and how often additional info was included"""
+
+    results = []
+
+    for post in recently_deleted_content_dict.get("ig_recently_deleted_media", []):
+        for media in post.get("media", []):
+            time = epoch_to_date(media.get("creation_timestamp", ""))
+            uri = media.get("uri", "")
+            has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+            # Check if the URI is in the picture_info dictionary
+            face_visible = picture_info.get(uri, False)
+
+            results.append({
+                "time": time,
+                "has_location": has_latitude_data,
+                "face_visible": face_visible              
+            })          
+
+    recently_deleted_content_df = pd.DataFrame(results) 
+
+    return recently_deleted_content_df
+
+# 62 reels -> count per day
+def extract_reels(reels_dict):
+    """extract count of reels per day """
+    
+    dates = [epoch_to_date(media.get("creation_timestamp")) for reel in reels_dict.get("ig_reels_media", []) for media in reel.get("media", [])]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+    
+    return aggregated_df.reset_index(name='reels_count')
+
+# 63 stories -> count per day
+def extract_stories(stories_dict):
+    """extract stories count per day and how often additional info was included"""
+
+    results = []
+
+    for story in stories_dict.get("ig_stories", []):
+        time = epoch_to_date(story.get("creation_timestamp", ""))
+        has_latitude_data = any("latitude" in exif_data for exif_data in story.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+        results.append({
+            "time": time,
+            "has_location": has_latitude_data,
+        })          
+
+    stories_df = pd.DataFrame(results) 
+
+    return stories_df
 
 # 68 liked_comments -> count per day
 def extract_liked_comments(liked_comments_dict):
