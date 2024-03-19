@@ -226,6 +226,16 @@ extraction_dict = {
         }
     },
 
+    "archived_posts": {
+        "extraction_function": extract_archived_posts,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you archive posts and what information was included?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+
     "posts_1": {
         "extraction_function": extract_posts_1,
         "picture_info": None,
@@ -235,6 +245,39 @@ extraction_dict = {
         }
     },
 
+    "profile_photos": {
+        "extraction_function": extract_profile_photos,
+        "picture_info": None,
+        "title": {
+            "en": "Do you use a face in your profile photo?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "recently_deleted_content": {
+        "extraction_function": extract_recently_deleted_content,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you delete posts and what information was included?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "reels": {
+        "extraction_function": extract_reels,
+        "title": {
+            "en": "How often did you post reels?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "stories": {
+        "extraction_function": extract_stories,
+        "title": {
+            "en": "How often did you post stories and did you include location information?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
 
 
     "liked_comments": {

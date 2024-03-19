@@ -3,11 +3,11 @@ from port.api.assets import *
 from port.api.commands import (CommandSystemDonate, CommandSystemExit, CommandUIRender)
 
 from datetime import datetime, timezone, timedelta
-
 import zipfile
 import cv2
+from PIL import Image
 import numpy as np
-#from ddpinspect import instagram
+import time
 
 import pandas as pd
 import json
@@ -16,9 +16,7 @@ import time
 from port.extraction_functions import *
 from port.extraction_functions_dict import extraction_dict
 
-
-
-# all functions during the donation process are called here
+# MAIN FUNCTION INITIATING THE DONATION PROCESS
 
 def process(sessionId):
     print(read_asset("hello_world.txt"))
@@ -27,34 +25,36 @@ def process(sessionId):
     meta_data = []
     meta_data.append(("debug", f"{key}: start"))
 
-    # STEP 1: select the file
+    # STEP 1: Select DDP and extract automatically required data
+    
     data = None
+
     while True:
         meta_data.append(("debug", f"{key}: prompt file"))
-        promptFile = prompt_file("application/zip, text/plain")
-        fileResult = yield render_donation_page(promptFile)
-        if fileResult.__type__ == 'PayloadString':
-            # Extracting the zipfile
-            meta_data.append(("debug", f"{key}: extracting file"))
-            extraction_result = []
-            zipfile_ref = get_zipfile(fileResult.value)
-            print(zipfile_ref, fileResult.value)
-            files = get_files(zipfile_ref)
-            fileCount = len(files)
-            for index, filename in enumerate(files):
-                percentage = ((index+1)/fileCount)*100
-                promptMessage = prompt_extraction_message(f"Extracting file: {filename}", percentage)   
-                yield render_donation_page(promptMessage)   
-                file_extraction_result = extract_file(zipfile_ref, filename)
-                extraction_result.append(file_extraction_result)
 
-            if len(extraction_result) >= 0:
+        # allow users to only upload zip-files and render file-input page 
+        promptFile = prompt_file("application/zip")
+        fileResult = yield render_donation_page(promptFile)
+        
+        # if user input
+        if fileResult.__type__ == 'PayloadString':
+
+            meta_data.append(("debug", f"{key}: extracting file"))
+
+            # automatically extract required data
+            extractionResult = extract_data(fileResult.value)
+
+            if extractionResult != 'invalid':
+
                 meta_data.append(("debug", f"{key}: extraction successful, go to consent form"))
                 data = extraction_result
                 break
+
             else:
+
                 meta_data.append(("debug", f"{key}: prompt confirmation to retry file selection"))
                 retry_result = yield render_donation_page(retry_confirmation())
+
                 if retry_result.__type__ == 'PayloadTrue':
                     meta_data.append(("debug", f"{key}: skip due to invalid file"))
                     continue
@@ -62,7 +62,8 @@ def process(sessionId):
                     meta_data.append(("debug", f"{key}: retry prompt file"))
                     break
 
-    # STEP 2: ask for consent
+    # STEP 2: Present user their extracted data and ask for consent
+
     meta_data.append(("debug", f"{key}: prompt consent"))
     prompt = prompt_consent(data, meta_data)
     consent_result = yield render_donation_page(prompt)
@@ -147,8 +148,8 @@ def get_files(zipfile_ref):
                 target_df = v["extraction_function"](target_file)
 
         except Exception as e:
-            print(e)
-            target_df = pd.DataFrame(["Empty"], columns=[str(file)])
+            print(target_file, e)
+            target_df = pd.DataFrame(["file_does_not_exist"], columns=[str(file)])
         
         data.append(target_df)
 
