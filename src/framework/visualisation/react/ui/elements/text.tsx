@@ -2,9 +2,10 @@ import { Weak } from '../../../../helpers'
 import { PropsUITextBodyLarge, PropsUITextBodyMedium, PropsUITextBodySmall, PropsUITextLabel, PropsUITextCaption, PropsUITextTitle0, PropsUITextTitle1, PropsUITextTitle2, PropsUITextTitle3, PropsUITextTitle4, PropsUITextTitle6 } from '../../../../types/elements'
 
 export const BodyLarge = ({ text, color = 'text-grey1', margin = 'mb-6 md:mb-8 lg:mb-10' }: Weak<PropsUITextBodyLarge>): JSX.Element => {
+  // if the text string contains a linebreak, then split the text
   return (
     <div className={`text-bodylarge font-body ${color} ${margin}`}>
-      {text}
+      {text.split('\n').map((line, index) => (<div key={index}>{line}</div>))}
     </div>
   )
 }
