@@ -11,7 +11,7 @@ onmessage = (event) => {
 
     case 'firstRunCycle':
       pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`)
-      //load external file to use in pyodide
+      //load vornamen.txt to use in pyodide
       loadAndUnpackZipArchive("/vornamen.zip");
       runCycle(null)
       break
@@ -109,7 +109,7 @@ function installPortPackage() {
   `);  
 }
 
-// add external txt to use in pyodide
+// add vornamen.txt-zip archive to use in pyodide 
 
 async function loadAndUnpackZipArchive(zipUrl) {
     try {
@@ -122,9 +122,11 @@ async function loadAndUnpackZipArchive(zipUrl) {
         // Unpack the zip archive into Pyodide virtual file system
         pyodide.unpackArchive(zipBinary, "zip");
         
-        console.log("Zip archive unpacked successfully.");
+        console.log("Instagram zip archive unpacked successfully.");
         
     } catch (error) {
-        console.error("Error loading and unpacking zip archive:", error);
+
+        console.error("Error loading and unpacking Instagram zip archive:", error);
+
     }
 }

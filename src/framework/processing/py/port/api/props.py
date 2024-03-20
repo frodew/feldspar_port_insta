@@ -70,19 +70,19 @@ class PropsUIPromptConfirm:
     Attributes:
         text: message to display
         ok: message to display if the user wants to try again
-        cancel: message to display if the user wants to continue regardless
+        # cancel: message to display if the user wants to continue regardless
     """
 
     text: Translatable
     ok: Translatable
-    cancel: Translatable
+    # cancel: Translatable
 
     def toDict(self):
         dict = {}
         dict["__type__"] = "PropsUIPromptConfirm"
         dict["text"] = self.text.toDict()
         dict["ok"] = self.ok.toDict()
-        dict["cancel"] = self.cancel.toDict()
+        # dict["cancel"] = self.cancel.toDict()
         return dict
 
 
