@@ -38,31 +38,46 @@ def process(sessionId):
         # if user input
         if fileResult.__type__ == 'PayloadString':
 
-            meta_data.append(("debug", f"{key}: extracting file"))
+            check_ddp = check_if_valid_instagram_ddp(fileResult.value)
 
-            # automatically extract required data
-            extractionResult = extract_data(fileResult.value)
+            if check_ddp == "valid":
 
-            if extractionResult != 'invalid_file':
+                meta_data.append(("debug", f"{key}: extracting file"))
+
+                # automatically extract required data
+                data = extract_data(fileResult.value)
 
                 meta_data.append(("debug", f"{key}: extraction successful, go to consent form"))
-                data = extractionResult
+
                 break
 
-            else:
+            elif check_ddp == "invalid_no_json":
 
-                meta_data.append(("debug", f"{key}: prompt confirmation to retry file selection"))
-                retry_result = yield render_donation_page(retry_confirmation())
+                meta_data.append(("debug", f"{key}: prompt confirmation to retry file selection (invalid_no_json)"))
+                retry_result = yield render_donation_page(retry_confirmation_no_json())
+
+                if retry_result.__type__ == 'PayloadTrue':
+                    meta_data.append(("debug", f"{key}: retry prompt file"))
+                    continue
+
+            elif check_ddp == "invalid_no_ddp":
+
+                meta_data.append(("debug", f"{key}: prompt confirmation to retry file selection (invalid_no_ddp)"))
+                retry_result = yield render_donation_page(retry_confirmation_no_ddp())
 
                 if retry_result.__type__ == 'PayloadTrue':
                     meta_data.append(("debug", f"{key}: retry prompt file"))
                     continue
                 
-                # deactivated options for users to continue without valid file
+            else:
+                
+                meta_data.append(("debug", f"{key}: prompt confirmation to retry file selection (invalid_file)"))
+                print(check_ddp)
+                retry_result = yield render_donation_page(retry_confirmation_no_ddp())
 
-                # else:
-                #     meta_data.append(("debug", f"{key}: skip due to invalid file"))
-                #     break
+                if retry_result.__type__ == 'PayloadTrue':
+                    meta_data.append(("debug", f"{key}: retry prompt file"))
+                    continue
 
     # STEP 2: Present user their extracted data and ask for consent
 
@@ -79,7 +94,7 @@ def process(sessionId):
     # send no data if no consent
     if consent_result.__type__ == "PayloadFalse":   
         value = json.dumps('{"status" : "donation declined"}')
-        yield exit(f"{sessionId}-{key}", value)
+        yield donate(f"{sessionId}-{key}", value)
 
 
 
@@ -89,7 +104,7 @@ def process(sessionId):
 
 def prompt_file(extensions):
     description = props.Translatable({
-        "en": "Please select your downloaded Instagram ZIP file from your device. The file should be named like \"instagram-USERNAME-DATE-...-.zip\".",
+        "en": "Please select your downloaded Instagram ZIP file from your device. The file should be named like \"instagram-USERNAME-DATE-...-.zip\".\nDepending on the number of pictures you have, the extraction may take some time (~ 120 pictures/minute).\nFor example, if you have posted a picture each day over the last three months, the uploading should take arould one minute.",
         "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat."
     })
 
@@ -109,10 +124,24 @@ def render_donation_page(body):
     return CommandUIRender(page)
 
 
-def retry_confirmation():
+def retry_confirmation_no_json():
 
     text = props.Translatable({
-        "en": "Unfortunately, we cannot process your file. Are you sure that you selected the downloaded Instagram ZIP file?\nThe file should be named like \"instagram-USERNAME-DATE-...-.zip\". Make sure it is a zip file.",
+        "en": "Unfortunately, we cannot process your file. It seems like you submitted a HTML file of your Instagram data.\nPlease download your data from Instagram again and select the data format \"JSON\".\n The downloades file should be named like \"instagram-USERNAME-DATE-...-.zip\". Make sure it is a zip file.",
+        "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen."
+    })
+
+    ok = props.Translatable({
+        "en": "Try again with JSON file",
+        "nl": "Probeer opnieuw"
+    })
+
+    return props.PropsUIPromptConfirm(text, ok)
+
+def retry_confirmation_no_ddp():
+
+    text = props.Translatable({
+        "en": "Unfortunately, we cannot process your file. Did you really select your downloaded Instagram ZIP file?\nThe downloades file should be named like \"instagram-USERNAME-DATE-...-.zip\". Make sure it is a zip file.",
         "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen."
     })
 
@@ -121,15 +150,56 @@ def retry_confirmation():
         "nl": "Probeer opnieuw"
     })
 
-    # cancel = props.Translatable({
-    #     "en": "Continue",
-    #     "nl": "Verder"
-    # })
-
-    # return props.PropsUIPromptConfirm(text, ok, cancel)
     return props.PropsUIPromptConfirm(text, ok)
 
+def check_if_valid_instagram_ddp(filename):
 
+    folder_name_check_ddp = "ads_information"
+    file_name_check_html = "start_here.html"
+
+    try:
+
+        with zipfile.ZipFile(filename, 'r') as zip_ref:
+
+            found_folder_name_check_ddp = False
+            found_file_name_check_html = False
+
+            for file_info in zip_ref.infolist():
+
+                if folder_name_check_ddp in file_info.filename:
+
+                    found_folder_name_check_ddp = True
+                
+                elif file_name_check_html in file_info.filename:
+
+                    found_file_name_check_html = True
+
+            if found_folder_name_check_ddp:
+
+                if found_file_name_check_html:
+
+                    print(f"Folder '{folder_name_check_ddp}' found and file {file_name_check_html} found in the ZIP file. Seems like a Instagram HTML DDP.")
+                    return "invalid_no_json"
+
+                else:
+
+                    print(f"Folder '{folder_name_check_ddp}' found and file {file_name_check_html} not found in the ZIP file. Seems like a real Instagram JSON DDP.")
+                    return "valid"
+
+            else:
+
+                print(f"Folder '{folder_name_check_ddp}' not found. Does not seem like an Instagram DDP.")
+                return "invalid_no_ddp"
+    
+    except zipfile.BadZipFile:
+
+        print("Invalid ZIP file.")
+        return "invalid_file_zip"
+
+    except Exception as e:
+
+        print(f"An error occurred: {e}")
+        return "invalid_file_error"
 
 ############################
 # Extraction scripts
@@ -139,51 +209,36 @@ def retry_confirmation():
 def extract_data(filename): 
     """takes zip folder, extracts relevant json file contents, then extracts & processes relevant information and returns them as dataframes"""
     
-    if not check_if_valid_instagram_ddp(filename):
-        return "invalid_file"
-
     # Check if and how many faces are in pictures
     picture_info = check_faces_in_zip(filename)
 
     data = []
 
     for file, v in extraction_dict.items():
-        
+
         # Extract json from file name based on "key"
         file_json = extractJsonContentFromZipFolder(filename, file)
 
-        try:
-            # Call the "value" extraction function
-            if "picture_info" in v:  # Check if picture_info is required for this extraction function
-                file_json_df = v["extraction_function"](file_json, picture_info)
-            else:
-                file_json_df = v["extraction_function"](file_json)
+        if file_json is not None:
+            
+            try:
+                # Call the "value" extraction function
+                if "picture_info" in v:  # Check if picture_info is required for this extraction function
+                    file_json_df = v["extraction_function"](file_json, picture_info)
+                else:
+                    file_json_df = v["extraction_function"](file_json)
 
-        except Exception as e:
-            # Fails if file does not exist
-            print(file_json, e)
+            except Exception as e:
+                # if it fails for some reason
+                file_json_df = pd.DataFrame([f"extraction_failed__{file, type(e).__name__}"], columns=[str(file)])
+
+        else:      
+            
             file_json_df = pd.DataFrame(["file_does_not_exist"], columns=[str(file)])
         
         data.append(file_json_df)
 
     return data
-
-def check_if_valid_instagram_ddp(filename):
-
-    folder_name = "ads_information"
-
-    with zipfile.ZipFile(filename, 'r') as zip_ref:
-
-        for file_info in zip_ref.infolist():
-            
-            print(file_info)
-            if folder_name in file_info.filename:
-
-                print(f"Folder '{folder_name}' found in the ZIP file.")
-                return True
-
-        print(f"Folder '{folder_name}' not found in the ZIP file.")
-        return False
 
 # Count faces for each picture
 def check_faces_in_zip(filename):
@@ -249,13 +304,18 @@ def extractJsonContentFromZipFolder(zip_file_path, pattern):
         for file_name in file_names:
             if (file_name.endswith('.json')) and (pattern in file_name):
 
-                # Read the JSON file into a dictionary
-                with zip_ref.open(file_name) as json_file:
-                    json_content = json_file.read()
-                    data = json.loads(json_content)
-                    file_json_dict[file_name] = data
+                try:
+                    # Read the JSON file into a dictionary
+                    with zip_ref.open(file_name) as json_file:
+                        json_content = json_file.read()
+                        data = json.loads(json_content)
+                        file_json_dict[file_name] = data
 
-                break
+                    break
+
+                except:
+                    
+                    return None
             
             # checks if loop is at last item
             if file_name == file_names[-1]:
@@ -272,6 +332,8 @@ def extractJsonContentFromZipFolder(zip_file_path, pattern):
 # Main content of consent page: display all extracted data
 def prompt_consent(data, meta_data):
 
+    print(meta_data)
+
     table_list = []
     i = 0
     
@@ -286,7 +348,3 @@ def prompt_consent(data, meta_data):
 # pass on user decision to donate or decline donation
 def donate(key, json_string):
     return CommandSystemDonate(key, json_string)
-
-# unsure what this function does...
-def exit(code, info):
-    return CommandSystemExit(code, info)

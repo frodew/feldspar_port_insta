@@ -42,7 +42,7 @@ export const FileInput = (props: Props): JSX.Element => {
     <>
       <div id='select-panel'>
         <div className='flex-wrap text-bodylarge font-body text-grey1 text-left'>
-          {description}
+            {description.split('\n').map((line, index) => (<div key={index}>{line}</div>))}
         </div>
         <div className='mt-8' />
         <div className='p-6 border-grey4 border-2 rounded'>
