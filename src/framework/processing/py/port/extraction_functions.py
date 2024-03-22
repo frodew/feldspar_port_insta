@@ -1,201 +1,230 @@
 import pandas as pd
 from datetime import datetime, timezone, timedelta
+import re
 
-# helper functions -----------------------------
+############################
+# Helper functions for extraction
+############################
 
-def epoch_to_date(epoch_timestamp: str | int) -> str: #thanks ddp-inspector/ddpinspect/src/parserlib/stringparse.py
+# convert timespamp
+def epoch_to_date(epoch_timestamp: str | int) -> str:
     """
     Convert epoch timestamp to an ISO 8601 string. Assumes UTC +1
 
     If timestamp cannot be converted raise CannotConvertEpochTimestamp
     """
+
     try:
         epoch_timestamp = int(epoch_timestamp)
         out = datetime.fromtimestamp(epoch_timestamp, tz=timezone(timedelta(hours=1))).isoformat() # timezone = utc + 1
-    except (OverflowError, OSError, ValueError, TypeError) as e:
-        logger.error("Could not convert epoch time timestamp, %s", e)
-        raise CannotConvertEpochTimestamp("Cannot convert epoch timestamp") from e
+
+    except:
+        
+        # fake date if unable to convert
+        out = "1999-01-01"
 
     out = pd.to_datetime(out)
     return str(out.date()) # convertion to string for display in browser
 
+# split name at whitespace, dot, or underscore
+def split_name(name):
+    parts = re.split(r'[\s._]+', name)
+    parts = [part.strip() for part in parts if part.strip()]
+    return parts
 
-# extraction functions --------------------------
+# check if names in file
+def check_name(names_to_check):
+    with open("vornamen.txt", "r") as file:
+        # read the names from the file and create a set
+        names_set = {line.strip() for line in file}
+    
+    # check if any name in names_to_check matches the names in the file
+    for name in names_to_check:
+        if name in names_set:
+            return True  
+        
+    return False  
 
-# 3 ads_and_topics/ads_clicked -> list of product names per day
+############################
+# Extraction functions
+############################
+
 def extract_ads_clicked(ads_clicked_dict):
-    """extract list of product names per day from ads_and_topics/ads_clicked"""
+    """extract ads_information/ads_and_topics/ads_clicked -> list of product names per day"""
 
     timestamps = [t['string_list_data'][0]['timestamp'] for t in ads_clicked_dict['impressions_history_ads_clicked']] # get list with timestamps in epoch format
     dates = [epoch_to_date(t) for t in timestamps] # convert epochs to dates
     products = [i["title"] for i in ads_clicked_dict['impressions_history_ads_clicked']]
     
     adds_clicked_df = pd.DataFrame(
-        {"date": dates,
-        "ads_clicked": products}
-    )
+        {
+            "date": dates,
+            "ads_clicked": products
+        })
+
     aggregated_df = adds_clicked_df.groupby('date')['ads_clicked'].agg(list).reset_index()
-    return aggregated_df
 
-    
+    return aggregated_df    
 
-# 4 ads_and_topics/ads_viewed -> list of authors per day
 def extract_ads_viewed(ads_viewed_dict):
-    """extract list of authors per day from ads_and_topics/ads_viewed"""
+    """extract ads_information/ads_and_topics/ads_viewed -> list of authors per day"""
 
     timestamps = [t['string_map_data']["Time"]['timestamp'] for t in ads_viewed_dict['impressions_history_ads_seen']] # get list with timestamps in epoch format (if author exists)
     dates = [epoch_to_date(t) for t in timestamps] # convert epochs to dates
     authors = [i["string_map_data"]["Author"]["value"] if "Author" in i["string_map_data"] else "unknownAuthor" for i in ads_viewed_dict['impressions_history_ads_seen'] ] # not for all viewed ads there is an author!
     
     adds_viewed_df = pd.DataFrame(
-        {"date": dates,
-        "authors_seen": authors}
-    )
+        {
+            "date": dates,
+            "authors_seen": authors
+        })
+
     aggregated_df = adds_viewed_df.groupby('date')['authors_seen'].agg(list).reset_index()
 
     return aggregated_df
 
-
-    
-
-# 5 ads_and_topics/posts_viewed -> count per day
 def get_postViewsPerDay(posts_viewed_dict):
-    """takes content of posts_viewed json file and returns dataframe with number of viewed posts/day"""
+    """extract ads_information/ads_and_topics/posts_viewed -> count per day"""
+
     timestamps = [t['string_map_data']['Time']['timestamp'] for t in posts_viewed_dict['impressions_history_posts_seen']] # get list with timestamps in epoch format
     dates = [epoch_to_date(t) for t in timestamps] # convert epochs to dates
     postViewedDates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = postViewedDates_df.groupby(["date"])["date"].size() # count number of rows per day
+
     return aggregated_df.reset_index(name='postsViewed_count')
 
-# 8 ads_and_topics/videos_watched -> count per day
 def get_videoViewsPerDay(videos_watched_dict):
-    """takes content of videos_watched json file and returns dataframe with number of viewed posts/day"""
+    """extract ads_information/ads_and_topics/videos_watched -> count per day"""
+
     timestamps = [t['string_map_data']['Time']['timestamp'] for t in videos_watched_dict["impressions_history_videos_watched"]] # get list with timestamps in epoch format
     dates = [epoch_to_date(t) for t in timestamps] # convert epochs to dates
     videosViewedDates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = videosViewedDates_df.groupby(["date"])["date"].size() # count number of rows per day
+
     return aggregated_df.reset_index(name='videosViewed_count')
 
-# 11 instagram_ads_and_businesses/subscription_for_no_ads -> dummy whether user has such a subscription
 def extract_subscription_for_no_ads(subscription_for_no_ads_dict):
-    """return whether user has subscription for ad-free usage"""
+    """extract ads_information/instagram_ads_and_businesses/subscription_for_no_ads -> dummy whether user has such a subscription"""
     
-    addfree_subscription = (subscription_for_no_ads_dict != None)
-    return pd.DataFrame([addfree_subscription], columns=['adfree_subscription'])
+    value = None 
 
+    if subscription_for_no_ads_dict["label_values"][0]["value"] == "Inaktiv":
+        value = False
+    else:
+        value = True
 
-# 15 followers_and_following/blocked_accounts -> count
+    return pd.DataFrame([value], columns=['adfree_subscription'])
+
 def extract_blocked_accounts(blocked_accounts_dict):
-    """extract count of blocked accounts"""
-    
-    if blocked_accounts_dict == None:
-        count = 0
-    else:
-        count = len([a for a in blocked_accounts_dict["relationships_blocked_users"]])
-        
-    return pd.DataFrame([count], columns=['blocked_accounts_count'])
+    """extract connections/followers_and_following/blocked_accounts -> count per day"""
+   
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in blocked_accounts_dict["relationships_blocked_users"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-# 16 followers_and_following/close_friends -> count
+    return aggregated_df.reset_index(name='blocked_accounts_count')
+
 def extract_close_friends(close_friends_dict):
-    """extract count of close friends"""
-    if close_friends_dict == None:
-        count = 0
-    else:
-        friends = [f for f in close_friends_dict["relationships_close_friends"]]
-        count = len(friends)
+    """extract connections/followers_and_following/close_friends -> count per day"""
 
-    return pd.DataFrame([count], columns=['close_friends_count'])
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in close_friends_dict["relationships_close_friends"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-# 17 followers_and_following/followers_1 -> count
+    return aggregated_df.reset_index(name='close_friends_count') 
+
 def extract_followers_1(followers_1_dict):
-    """extract count of followers"""
+    """extract connections/followers_and_following/followers_1 -> count per day"""
 
-    if followers_1_dict == None:
-        count = 0
-
+    # file can just be dict and not list if only one follower
+    if isinstance(followers_1_dict, dict):
+        dates = [epoch_to_date(followers_1_dict["string_list_data"][0]["timestamp"])]
     else:
-        count = len(followers_1_dict)
-    return pd.DataFrame([count], columns=['followers_count'])
+        dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in followers_1_dict]
 
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
-# 18 followers_and_following/following -> count
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='followers_dict')
+
 def extract_following(following_dict):
-    """extract count of accounts person is following"""
+    """extract connections/followers_and_following/following -> count"""
+
     if following_dict == None:
         count = 0
     else:
-        following = [f for f in following_dict["relationships_following"]]
+        following = [f for f in following_dict["relationships_following"]] # get count of following
         count = len(following)
 
     return pd.DataFrame([count], columns=['following_count'])
 
-
-# 19 followers_and_following/follow_requests_you've_received -> count
 def extract_follow_requests_youve_received(follow_requests_youve_received_dict):
-    """extract count of received follow requests"""
-    if follow_requests_youve_received_dict == None:
-        count = 0
-    else:
-        requests = [f for f in follow_requests_youve_received_dict["relationships_follow_requests_received"]]
-        count = len(requests)
+    """extract connections/followers_and_following/follow_requests_you've_received_dict -> count per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in follow_requests_youve_received_dict["relationships_follow_requests_received"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
-    return pd.DataFrame([count], columns=['received_follow_requests_count'])
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-# 20 followers_and_following/hide_story_from -> count
+    return aggregated_df.reset_index(name='received_follow_requests_count')
+
 def extract_hide_story_from(hide_story_from_dict):
-    """extract count of accounts story is hidden from"""
+    """extract connections/followers_and_following/hide_story_from -> count per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in hide_story_from_dict["relationships_hide_stories_from"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
-    if hide_story_from_dict == None:
-        count = 0
-    else:
-        count = len([x for x in hide_story_from_dict["relationships_hide_stories_from"]])
-    return pd.DataFrame([count], columns=['hide_story_from_count'])
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-# 21 followers_and_following/pending_follow_requests -> count
+    return aggregated_df.reset_index(name='hide_story_from_count')
+
 def extract_pending_follow_requests(pending_follow_requests_dict):
-    """extract count of pending follow requests"""
-    if pending_follow_requests_dict == None:
-        count = 0
-    else:
-        pending = [f for f in pending_follow_requests_dict["relationships_follow_requests_sent"]]
-        count = len(pending)
-    return pd.DataFrame([count], columns=['pending_follow_requests_count'])
+    """extract connections/followers_and_following/pending_follow_requests -> count per day"""
 
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in pending_follow_requests_dict['relationships_follow_requests_sent']] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
-# 23 followers_and_following/recently_unfollowed_accounts -> count
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='pending_follow_requests_count')
+
 def extract_recently_unfollowed_accounts(recently_unfollowed_accounts_dict):
-    """extract count of recently unfollowed accounts"""
-    if recently_unfollowed_accounts_dict == None:
-        count = 0
-    else:
-        count = len([x for x in recently_unfollowed_accounts_dict["relationships_unfollowed_users"]])
-    return pd.DataFrame([count], columns=['recently_unfollowed_accounts_count'])
+    """extract connections/followers_and_following/recently_unfollowed_accounts -> count per day"""
 
-# 24 followers_and_following/removed_suggestions -> count
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in recently_unfollowed_accounts_dict["relationships_unfollowed_users"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='recently_unfollowed_accounts_count')
+
 def extract_removed_suggestions(removed_suggestions_dict):
-    """extract count of removed suggestions"""
-    if removed_suggestions_dict == None:
-        suggestions = 0 # assume there are no suggestions if file doesnt exist
-    else:
-        suggestions = len([f for f in removed_suggestions_dict["relationships_dismissed_suggested_users"]])
-    return pd.DataFrame([suggestions], columns=['removed_suggestions_count'])
+    """extract connections/followers_and_following/removed_suggestions -> count per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in removed_suggestions_dict["relationships_dismissed_suggested_users"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
-# 25 followers_and_following/restricted_accounts -> count
+    return aggregated_df.reset_index(name='removed_suggestions_count') 
+
 def extract_restricted_accounts(restricted_accounts_dict):
-    """extract count of restricted accounts"""
-    if restricted_accounts_dict == None:
-        count = 0
-    else:
-        count = len([f for f in restricted_accounts_dict["relationships_restricted_users"]])
-    return pd.DataFrame([count], columns=['restricted_accounts_count'])
+    """extract connections/followers_and_following/restricted_accounts -> count per day"""
 
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in restricted_accounts_dict["relationships_restricted_users"]] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
 
-# 28 policy_updates_and_permissions/notification_of_privacy_policy_updates-> day and value
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='restricted_accounts_count')
+
 def extract_notification_of_privacy_policy_updates(notification_of_privacy_policy_updates_dict):
-    """extract day of when you've viewed updates to the Meta Privacy Polic and consent status"""
+    """extract logged_information/policy_updates_and_permissions/notification_of_privacy_policy_updates -> day and value"""
 
     # extract and preprocess dates
     dates = [d["string_map_data"]["Impression Time"]["value"] for d in notification_of_privacy_policy_updates_dict["policy_updates_and_permissions_notification_of_privacy_policy_updates"]]
@@ -205,131 +234,204 @@ def extract_notification_of_privacy_policy_updates(notification_of_privacy_polic
     consent_statuses = [v["string_map_data"]["Consent Status"]["value"] for v in notification_of_privacy_policy_updates_dict["policy_updates_and_permissions_notification_of_privacy_policy_updates"]]
 
     result = pd.DataFrame(
-        {"date": dates,
-        "consent_status": consent_statuses}
-    )
+        {
+            "date": dates,
+            "consent_status": consent_statuses
+        })
     
     return result
 
-
-# 37 personal_information/account_information.json -> dummy whether contact syncing enabled
 def extract_account_information(account_information_dict):
-    """extract dummy whether contact syncing is enabled"""
+    """extract personal_information/personal_information/account_information -> dummy whether 'contact_syncing' is enabled"""
 
-    value = None # return None if key isnt known
+    value = None 
 
     for k in ['Contact Syncing', 'Kontaktsynchronisierung', "Synchronisation des contacts"]: # keys are language specific
+
         if k in account_information_dict["profile_account_insights"][0]["string_map_data"]:
+
             value = account_information_dict["profile_account_insights"][0]["string_map_data"][k]["value"]
             break  
 
     return pd.DataFrame([value], columns=['contact_syncing_enabled'])
 
-
-# 41 personal_information/personal_information.json -> dummies whether user has profile image, email, phone, and private account
+# 41 
 def extract_personal_information(personal_information_dict):
-    """extract dummies whether user has profile image, email, phone, and private account"""
+    """
+    extract personal_information/personal_information/personal_information.json -> dummies whether user has profile image, email, phone, and private account
+    + extract whether used name is real name if compared against list of names ("vornamen.txt")
 
-    
-    profile_image, email, phone, private_account = None, None, None, None # return None if key isnt known
+    """
+
+    # check if information present
+
+    profile_image, email, phone, private_account = None, None, None, None
         
     for k in ['Profile Photo', 'Profilbild']: # keys are language specific
+
         if k in personal_information_dict["profile_user"][0]["media_map_data"]:
+
             profile_image = personal_information_dict["profile_user"][0]["media_map_data"][k]["uri"] != "False"
             break  
 
     for k in ['Email', 'E-Mail-Adresse']: # keys are language specific
+
         if k in personal_information_dict["profile_user"][0]['string_map_data']:
-            email = personal_information_dict["profile_user"][0]['string_map_data'][k]['value'] !=False
+
+            email = personal_information_dict["profile_user"][0]['string_map_data'][k]['value'] != "False"
             break 
 
-    for k in ['Phone Confirmed', 'Telefonnummer bestätigt']: # keys are language specific
+    for k in ['Phone Confirmed', 'Telefonnummer best\u00c3\u00a4tigt']: # keys are language specific
+
         if k in personal_information_dict["profile_user"][0]['string_map_data']:
+
             phone = personal_information_dict["profile_user"][0]['string_map_data'][k]['value'] != "False"
             break  
 
     for k in ['Private Account', 'Privates Konto']: # keys are language specific
+
         if k in personal_information_dict["profile_user"][0]['string_map_data']:
+
             private_account = personal_information_dict["profile_user"][0]['string_map_data'][k]['value']
             break         
 
+
+    # check if real name used in profile
     
-    result =pd.DataFrame(
-                {"profile_image": [profile_image],
-                "email": [email], 
-                "phone": [phone], 
-                "private_account": [private_account]})
+    name_to_check = None 
+    real_name = False
+
+    for k in ['Name']: # keys are language specific
+
+        if k in personal_information_dict["profile_user"][0]['string_map_data']:
+
+            name_to_check = personal_information_dict["profile_user"][0]['string_map_data'][k]['value']
+            break 
+        
+    # split names to check
+    names_to_check = split_name(name_to_check)
+    
+    # check if name in list of names
+    real_name = check_name(names_to_check)
+
+    result = pd.DataFrame(
+        {
+            "profile_image": [profile_image],
+            "email": [email], 
+            "phone": [phone], 
+            "private_account": [private_account],
+            "real_name_in_profile": [real_name]
+        })
 
     return result
 
-
-# 43 personal_information/profile_changes 43 -> day and what was changed
 def extract_profile_changes(profile_changes_dict):
-    """extract day and what was changed"""
-    
+    """extract personal_information/personal_information/profile_changes -> day and what was changed"""
+
+    changed_dates, changed_values = None, None
+
     changes = [t["string_map_data"] for t in profile_changes_dict['profile_profile_change']]
-    change_values = [t["Changed"]['value'] for t in changes]
-    change_dates = [epoch_to_date(t['Change Date']["timestamp"]) for t in changes]
+
+    for k in ["Changed", "Ge\u00c3\u00a4ndert"]: # keys are language specific
+
+        if any(k in d for d in changes):
+
+            changed_values = [t[k]['value'] for t in changes]
+            break
+
+    for k in ["Change Date", "Datum \u00c3\u00a4ndern"]: # keys are language specific
+
+        if any(k in d for d in changes):
+
+            changed_dates = [epoch_to_date(t[k]['timestamp']) for t in changes]
+            break
 
     changes_df = pd.DataFrame(
-        {"date": change_dates,
-        "changes_made": change_values}
-    )
+        {
+            "date": changed_dates,
+            "changes_made": changed_values
+        })
     
-    aggregated_df = changes_df.groupby('date')['changes_made'].agg(list).reset_index()
-    
-    return aggregated_df
+    return changes_df
 
-
-# 44 comments_allowed_from -> value
 def extract_comments_allowed_from(comments_allowed_from_dict):
-    """extract who can comment"""
+    """extract preferences/media_settings/comments_allowed_from -> value"""
     
-    for k in ["Comments Allowed From", "Kommentieren gestattet fÃ¼r"]: # keys are language specific
+    value = None
+
+    for k in ["Comments Allowed From", "Kommentieren gestattet f\u00c3\u00bcr"]: # keys are language specific
+
         if k in comments_allowed_from_dict['settings_allow_comments_from'][0]["string_map_data"]:
+
             value = comments_allowed_from_dict['settings_allow_comments_from'][0]["string_map_data"][k]["value"]
             break  
 
     return pd.DataFrame([value], columns=['comments_allowed_from'])
 
+def extract_comments_blocked_from(comments_blocked_from_dict):
+    """extract preferences/media_settings/comments_blocked_from -> count"""
 
-# 47 your_topics -> topics list
+    if comments_blocked_from_dict == None:
+        count = 0
+    else:
+        count = len([f for f in comments_blocked_from_dict["settings_blocked_commenters"]])
+
+    return pd.DataFrame([count], columns=['comments_blocked_from'])
+
+def extract_consents(consents_dict):
+    """extract preferences/media_settings/consents -> day and value"""
+    
+    # extract and preprocess dates
+    date = epoch_to_date(consents_dict["timestamp"])
+
+    consents = [v["label"] for v in consents_dict["label_values"]]
+
+    result = pd.DataFrame(
+        {
+            "date": date,
+            "consent_message": consents
+        })
+    
+    return result
+
 def extract_topics_df(topics_dict):
-    """takes the content of your_topics jsonfile, extracts topics and returns them as a dataframe"""
+    """extract preferences/your_topics -> list of topics"""
     
     topics_list = [t['string_map_data']['Name']['value'] for t in topics_dict['topics_your_topics']]
     topics_df = pd.DataFrame(topics_list, columns=['your_topics'])
+
     return topics_df
 
-
-# 48 account_privacy_changes -> day and change to account type
 def extract_account_privacy_changes(account_privacy_changes_dict):
-    """extract """
+    """extract security_and_login_information/login_and_account_creation/account_privacy_changes -> day and type-change"""
     
     changes = [c for c in account_privacy_changes_dict["account_history_account_privacy_history"]]
     titles = [t['title'] for t in changes]
     timestamps = []
 
     for c in changes:
+
         for k in ['Time', 'Zeit']:
+
             if k in c["string_map_data"]:
+
                 timestamp = c["string_map_data"][k]['timestamp']
                 timestamps.append(epoch_to_date(timestamp))
                 break
         
     changes_df = pd.DataFrame(
-        {"date": timestamps,
-        "change_account_type": titles}
-    )        
+        {
+            "date": timestamps,
+            "change_account_type": titles
+        })        
 
     aggregated_df = changes_df.groupby('date')['change_account_type'].agg(list).reset_index()
     
     return aggregated_df
 
-
-# 51 login_activity -> time and user agent
 def extract_login_activity(login_activity_dict):
-    """extract time and user agent of login"""
+    """extract security_and_login_information/login_and_account_creation/login_activity -> time and user agent"""
+
     logins = login_activity_dict['account_history_login_history']
     
     timestamps = [l["title"] for l in logins]
@@ -339,17 +441,17 @@ def extract_login_activity(login_activity_dict):
     user_agents = [l["string_map_data"]["User Agent"]["value"] for l in logins]
     
     login_df = pd.DataFrame(
-            {"date": dates,
+        {
+            "date": dates,
             "time": times,
-            "user_agent": user_agents}
-        ) 
+            "user_agent": user_agents
+        }) 
 
     return login_df
 
-
-# 52 logout_activity -> time and user agent
 def extract_logout_activity(logout_activity_dict):
-    """extract time and user agent of logout"""
+    """extract security_and_login_information/login_and_account_creation/logout_activity -> time and user agent"""
+
     logouts = logout_activity_dict['account_history_logout_history']
     
     timestamps = [l["title"] for l in logouts]
@@ -359,115 +461,300 @@ def extract_logout_activity(logout_activity_dict):
     user_agents = [l["string_map_data"]["User Agent"]["value"] for l in logouts]
     
     logout_df = pd.DataFrame(
-            {"date": dates,
+        {
+            "date": dates,
             "time": times,
-            "user_agent": user_agents}
-        ) 
+            "user_agent": user_agents
+        }) 
 
     return logout_df
 
+def extract_signup_information(signup_information_dict):
+    """extract security_and_login_information/login_and_account_creation/signup_information -> dummy if real name is used"""
+    
+    name_to_check = None 
+    real_name = False
 
-# 55 recently_viewed_items -> list of items
+    for k in ['Username', 'Benutzername']: # keys are language specific
+
+        if k in signup_information_dict['account_history_registration_info'][0]["string_map_data"]:
+
+            name_to_check = signup_information_dict['account_history_registration_info'][0]["string_map_data"][k]["value"]
+            break  
+    
+    # split names to check
+    names_to_check = split_name(name_to_check)
+    
+    # check if name in list of names
+    real_name = check_name(names_to_check)
+
+    return pd.DataFrame([real_name], columns=['real_name_signup'])
+
 def extract_recently_viewed_items(recently_viewed_items_dict):
-    """extract """
+    """extract your_instagram_activity/shopping/recently_viewed_items -> list of items"""
+
     items = recently_viewed_items_dict["checkout_saved_recently_viewed_products"]
     products = [p["string_map_data"]["Product Name"]["value"] for p in items]
+
     products_df = pd.DataFrame(products, columns=['recently_viewed_items'])
     
     return products_df
 
-
-# 56 post_comments_1 -> 
 def extract_post_comments_1(post_comments_1_dict):
-    """extract comments count per day"""
-    dates = [epoch_to_date(t["string_map_data"]["Time"]["timestamp"]) for t in post_comments_1_dict]
+    """extract your_instagram_activity/comments/post_comments_1 -> count per day"""
+
+    # file can just be dict and not list if only one posted comment
+    if isinstance(post_comments_1_dict, dict):
+        dates = [epoch_to_date(post_comments_1_dict["string_map_data"]["Time"]["timestamp"])]
+    else:
+        dates = [epoch_to_date(t["string_map_data"]["Time"]["timestamp"]) for t in post_comments_1_dict] # get list with timestamps in epoch format
+
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
     
     return aggregated_df.reset_index(name='postComments_count')
 
-# 57 reels_comments -> count per day
 def extract_reels_comments(reels_comments_dict):
-    """extract count of reels comments per day """
+    """extract your_instagram_activity/comments/reels_comments -> count per day"""
     
-    dates = [epoch_to_date(t["string_map_data"]["Time"]["timestamp"]) for t in reels_comments_dict['comments_reels_comments']]
+    dates = [epoch_to_date(t["string_map_data"]["Time"]["timestamp"]) for t in reels_comments_dict['comments_reels_comments']] # get list with timestamps in epoch format
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
     
     return aggregated_df.reset_index(name='reelsComments_count')
 
-# 68 liked_comments -> count per day
+def extract_archived_posts(archived_posts_dict, picture_info):
+    """extract your_instagram_activity/content/archived_posts -> count per day + info about face and location"""
+
+    results = []
+
+    for post in archived_posts_dict.get("ig_archived_post_media", []):
+
+        for media in post.get("media", []):
+
+            time = epoch_to_date(media.get("creation_timestamp", ""))
+            uri = media.get("uri", "")
+            has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+            # check if the URI is in the picture_info dictionary
+            face_visible = picture_info.get(uri, False)
+
+            results.append(
+                {
+                    "time": time,
+                    "has_location": has_latitude_data,
+                    "face_visible": face_visible
+                })          
+
+    archived_posts_df = pd.DataFrame(results) 
+
+    return archived_posts_df
+
+def extract_posts_1(posts_1_dict, picture_info):
+    """extract your_instagram_activity/content/posts_1 -> count per day + info about face and location"""
+
+    results = []
+
+    # file can just be dict and not list if only one post
+    if isinstance(posts_1_dict, dict):
+
+        for media in posts_1_dict.get("media", []):
+
+            time = epoch_to_date(media.get("creation_timestamp", ""))
+            uri = media.get("uri", "")
+            has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+            # check if the URI is in the picture_info dictionary
+            face_visible = picture_info.get(uri, False)
+
+            results.append(
+                {
+                    "time": time,
+                    "has_location": has_latitude_data,
+                    "face_visible": face_visible              
+                })          
+
+    else:
+
+        for post in posts_1_dict:
+
+            for media in post.get("media", []):
+
+                time = epoch_to_date(media.get("creation_timestamp", ""))
+                uri = media.get("uri", "")
+                has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+                
+                # check if the URI is in the picture_info dictionary
+                face_visible = picture_info.get(uri, False)
+
+                results.append(
+                    {
+                        "time": time,
+                        "has_location": has_latitude_data,
+                        "face_visible": face_visible              
+                    })          
+
+    posts_df = pd.DataFrame(results) 
+
+    return posts_df
+
+def extract_profile_photos(profile_photos_dict, picture_info):
+    """extract your_instagram_activity/content/profile_photos -> info about face"""
+
+    uri = profile_photos_dict.get("ig_profile_picture", [])[0].get("uri", "")
+
+    # check if the URI is in the picture_info dictionary
+    face_visible = picture_info.get(uri, False)
+
+    face_in_picture = True if face_visible >=1 else False 
+
+    return pd.DataFrame([face_in_picture], columns=['face_in_picture'])
+
+def extract_recently_deleted_content(recently_deleted_content_dict, picture_info):
+    """extract your_instagram_activity/content/recently_deleted_content -> count per day + info about face and location"""
+
+    results = []
+
+    for post in recently_deleted_content_dict.get("ig_recently_deleted_media", []):
+
+        for media in post.get("media", []):
+
+            time = epoch_to_date(media.get("creation_timestamp", ""))
+            uri = media.get("uri", "")
+            has_latitude_data = any("latitude" in exif_data for exif_data in media.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+            
+            # Check if the URI is in the picture_info dictionary
+            face_visible = picture_info.get(uri, False)
+
+            results.append(
+                {
+                    "time": time,
+                    "has_location": has_latitude_data,
+                    "face_visible": face_visible              
+                })          
+
+    recently_deleted_content_df = pd.DataFrame(results) 
+
+    return recently_deleted_content_df
+
+def extract_reels(reels_dict):
+    """extract your_instagram_activity/content/reels -> count per day"""
+    
+    dates = [epoch_to_date(media.get("creation_timestamp")) for reel in reels_dict.get("ig_reels_media", []) for media in reel.get("media", [])]
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+    
+    return aggregated_df.reset_index(name='reels_count')
+
+def extract_stories(stories_dict, picture_info):
+    """extract your_instagram_activity/content/stories -> count per day + info about face and location"""
+
+    results = []
+
+    for story in stories_dict.get("ig_stories", []):
+
+        time = epoch_to_date(story.get("creation_timestamp", ""))
+        uri = story.get("uri", "")
+        has_latitude_data = any("latitude" in exif_data for exif_data in story.get("media_metadata", {}).get("photo_metadata", {}).get("exif_data", []))
+
+        # check if the URI is in the picture_info dictionary
+        face_visible = picture_info.get(uri, False)
+
+        results.append(
+            {
+                "time": time,
+                "has_location": has_latitude_data,
+                "face_visible": face_visible
+            })          
+
+    stories_df = pd.DataFrame(results) 
+
+    return stories_df
+
 def extract_liked_comments(liked_comments_dict):
-    """extract count of liked comments per day"""
+    """extract your_instagram_activity/likes/liked_comments -> count per day"""
     
     dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in liked_comments_dict['likes_comment_likes']]
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
     return aggregated_df.reset_index(name='likedComments_count')
 
-
-# 69 liked_posts -> count per day
 def extract_liked_posts(liked_posts_dict):
-    """extract  count of liked posts per day"""
+    """extract your_instagram_activity/likes/liked_posts -> count per day"""
     
     dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in liked_posts_dict['likes_media_likes']]
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
     return aggregated_df.reset_index(name='likedPosts_count')
 
-
-# 80 emoji_sliders -> count per day
-def extract_emoji_sliders(emoji_sliders_dict):
-    """extract count of reaction to emoji slider in a story per day"""
+def extract_countdowns(countdowns_dict):
+    """extract your_instagram_activity/story_sticker_interactions/countdowns -> count per day"""
     
-    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in emoji_sliders_dict['story_activities_emoji_sliders']]
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in countdowns_dict['story_activities_countdowns']] # get list with timestamps in epoch format
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
+    aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
+
+    return aggregated_df.reset_index(name='countdowns_count')
+
+
+def extract_emoji_sliders(emoji_sliders_dict):
+    """extract your_instagram_activity/story_sticker_interactions/emoji_sliders -> count per day"""
+    
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in emoji_sliders_dict['story_activities_emoji_sliders']] # get list with timestamps in epoch format
+    dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
     return aggregated_df.reset_index(name='emojiSliderReaction_count')
 
 
-# 81 polls-> count per day
 def extract_polls(polls_dict):
-    """extract count of reation to poll in story per day"""
+    """extract your_instagram_activity/story_sticker_interactions/polls -> count per day"""
     
-    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in polls_dict['story_activities_polls']]
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in polls_dict['story_activities_polls']] # get list with timestamps in epoch format
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
     return aggregated_df.reset_index(name='pollReaction_count')
 
 
-# 82 questions -> count per day
 def extract_questions(questions_dict):
-    """extract count of answers to question in story per day"""
+    """extract your_instagram_activity/story_sticker_interactions/questions -> count per day"""
     
-    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in questions_dict['story_activities_questions']]
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in questions_dict['story_activities_questions']] # get list with timestamps in epoch format
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+    
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
     
     return aggregated_df.reset_index(name='answeredStoryQuestion_count')
 
 
-# 83 quizzes-> count per day
 def extract_quizzes(quizzes_dict):
-    """extract count of polls answered in story per day"""
+    """extract your_instagram_activity/story_sticker_interactions/quizzes -> count per day"""
     
-    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in quizzes_dict['story_activities_quizzes']]
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in quizzes_dict['story_activities_quizzes']] # get list with timestamps in epoch format
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
 
     return aggregated_df.reset_index(name='pollAnswered_count')
 
 
-# 84 story_likes -> count per day
 def extract_story_likes(story_likes_dict):
-    """extract count of liked stories per day"""
+    """extract your_instagram_activity/story_sticker_interactions/story_likes -> count per day"""
     
-    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in story_likes_dict['story_activities_story_likes']]
+    dates = [epoch_to_date(t["string_list_data"][0]["timestamp"]) for t in story_likes_dict['story_activities_story_likes']] # get list with timestamps in epoch format
     dates_df = pd.DataFrame(dates, columns=['date']) # convert to df
+
     aggregated_df = dates_df.groupby(["date"])["date"].size() # count number of rows per day
     
     return aggregated_df.reset_index(name='likedStories_count')

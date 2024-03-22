@@ -1,8 +1,10 @@
 from port.extraction_functions import *
 
 # defines which extraction functions are used and what titles are displayed
+# dict-keys are names of files or paths to that file if filename in path (like in personal_information/personal_information)
 
 extraction_dict = {
+
     "ads_clicked": {
         "extraction_function": extract_ads_clicked,
         "title": {
@@ -10,6 +12,7 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     }, 
+
     "ads_viewed": {
         "extraction_function": extract_ads_viewed,
         "title": {
@@ -17,6 +20,7 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
+
     "posts_viewed": {
         "extraction_function": get_postViewsPerDay,
         "title": {
@@ -24,6 +28,7 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
+    
     "videos_watched": {
         "extraction_function": get_videoViewsPerDay, 
         "title": {
@@ -31,6 +36,7 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
+    
     "subscription_for_no_ads": {
         "extraction_function": extract_subscription_for_no_ads,
         "title": {
@@ -38,27 +44,31 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
+    
     "blocked_accounts": {
         "extraction_function": extract_blocked_accounts,
         "title": {
-            "en": "Number of accounts you have blocked",
+            "en": "Number of accounts you have blocked by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "close_friends": {
         "extraction_function": extract_close_friends,
         "title": {
-            "en": "Number of close friends",
+            "en": "Number of close friends by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "followers_1": {
         "extraction_function": extract_followers_1,
         "title": {
-            "en": "Number of followers",
+            "en": "Number of followers by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "followers_and_following/following": {
         "extraction_function": extract_following,
         "title": {
@@ -66,45 +76,51 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "follow_requests_you've_received": {
         "extraction_function": extract_follow_requests_youve_received,
         "title": {
-            "en": "Number of follow requests you have received",
+            "en": "Number of follow requests you have received by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "hide_story_from": {
         "extraction_function": extract_hide_story_from,
         "title": {
-            "en": "Number of account you have hidden your story from",
+            "en": "Number of account you have hidden your story from by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "pending_follow_requests": {
         "extraction_function": extract_pending_follow_requests,
         "title": {
-            "en": "Number of your pending follow requests",
+            "en": "Number of your pending follow requests by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "recently_unfollowed_accounts": {
         "extraction_function": extract_recently_unfollowed_accounts,
         "title": {
-            "en": "Number of accounts you recently unfollowed",
+            "en": "Number of accounts you recently unfollowed by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "removed_suggestions": {
         "extraction_function": extract_removed_suggestions,
         "title": {
-            "en": "Number of accounts that you've removed from your suggestions",
+            "en": "Number of accounts that you've removed from your suggestions by day",
             "nl": "Inhoud zip bestand"
             }
     },
+    
     "restricted_accounts": {
         "extraction_function": extract_restricted_accounts,
         "title": {
-            "en": "Number of accounts that you've restricted",
+            "en": "Number of accounts that you've restricted by day",
             "nl": "Inhoud zip bestand"
             }
     },
@@ -117,7 +133,7 @@ extraction_dict = {
         }
     },
 
-    "account_information.json": {
+    "personal_information/account_information": {
         "extraction_function": extract_account_information,
         "title": {
             "en": "Have you enabled contact syncing?",
@@ -125,10 +141,10 @@ extraction_dict = {
         }
     },
 
-    "personal_information.json": {
+    "personal_information/personal_information.json": {
         "extraction_function": extract_personal_information,
         "title": {
-            "en": "Do you have a profile image, email, phone, and a private account?",
+            "en": "Do you have a profile image, email, phone, a private account, and do you use your real name?",
             "nl": "Inhoud zip bestand"
         }
     },
@@ -149,6 +165,22 @@ extraction_dict = {
         }
     },
 
+    "comments_blocked_from": {
+        "extraction_function": extract_comments_blocked_from,
+        "title": {
+            "en": "Number of account you blocked from commenting.",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "consents": {
+        "extraction_function": extract_consents,
+        "title": {
+            "en": "What did you agree to when?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
     "your_topics": {
         "extraction_function": extract_topics_df,
         "title": {
@@ -156,7 +188,6 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
             }
     },
-
 
     "account_privacy_changes": {
         "extraction_function": extract_account_privacy_changes,
@@ -166,7 +197,6 @@ extraction_dict = {
         }
     },
 
-
     "login_activity": {
         "extraction_function": extract_login_activity,
         "title": {
@@ -174,7 +204,6 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
-
 
     "logout_activity": {
         "extraction_function": extract_logout_activity,
@@ -184,6 +213,13 @@ extraction_dict = {
         }
     },
 
+    "signup_information": {
+        "extraction_function": extract_signup_information,
+        "title": {
+            "en": "Did you use a real name to signup on Instagram?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
 
     "recently_viewed_items": {
         "extraction_function": extract_recently_viewed_items,
@@ -193,7 +229,6 @@ extraction_dict = {
         }
     },
 
-
     "post_comments_1": {
         "extraction_function": extract_post_comments_1,
         "title": {
@@ -201,7 +236,6 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
-
 
     "reels_comments": {
         "extraction_function": extract_reels_comments,
@@ -211,6 +245,58 @@ extraction_dict = {
         }
     },
 
+    "archived_posts": {
+        "extraction_function": extract_archived_posts,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you archive posts and what information was included?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "posts_1": {
+        "extraction_function": extract_posts_1,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you post and what information was included?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "profile_photos": {
+        "extraction_function": extract_profile_photos,
+        "picture_info": None,
+        "title": {
+            "en": "Do you use a face in your profile photo?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "recently_deleted_content": {
+        "extraction_function": extract_recently_deleted_content,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you delete posts and what information was included?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "content/reels": {
+        "extraction_function": extract_reels,
+        "title": {
+            "en": "How often did you post reels?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
+
+    "stories": {
+        "extraction_function": extract_stories,
+        "picture_info": None,
+        "title": {
+            "en": "How often did you post stories and did you include location information?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
 
     "liked_comments": {
         "extraction_function": extract_liked_comments,
@@ -220,7 +306,6 @@ extraction_dict = {
         }
     },
 
-
     "liked_posts": {
         "extraction_function": extract_liked_posts,
         "title": {
@@ -229,6 +314,13 @@ extraction_dict = {
         }
     },
 
+    "countdowns": {
+        "extraction_function": extract_countdowns,
+        "title": {
+            "en": "How often did you react to an countdown in a story per day?",
+            "nl": "Inhoud zip bestand"
+        }
+    },
 
     "emoji_sliders": {
         "extraction_function": extract_emoji_sliders,
@@ -238,7 +330,6 @@ extraction_dict = {
         }
     },
 
-
     "polls": {
         "extraction_function": extract_polls,
         "title": {
@@ -247,7 +338,6 @@ extraction_dict = {
         }
     },
 
-
     "questions": {
         "extraction_function": extract_questions,
         "title": {
@@ -255,7 +345,6 @@ extraction_dict = {
             "nl": "Inhoud zip bestand"
         }
     },
-
 
     "quizzes": {
         "extraction_function": extract_quizzes,
