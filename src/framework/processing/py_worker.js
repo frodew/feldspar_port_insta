@@ -122,11 +122,11 @@ async function loadAndUnpackZipArchive(zipUrl) {
         // Unpack the zip archive into Pyodide virtual file system
         pyodide.unpackArchive(zipBinary, "zip");
         
-        console.log("Instagram zip archive unpacked successfully.");
+        console.log("names-zip-file successfully unpacked.");
         
     } catch (error) {
 
-        console.error("Error loading and unpacking Instagram zip archive:", error);
+        console.error("Error loading and unpacking names-zip-file archive:", error);
 
     }
 }
