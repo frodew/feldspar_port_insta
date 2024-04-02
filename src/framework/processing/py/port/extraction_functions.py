@@ -363,7 +363,21 @@ def extract_account_information(account_information_dict):
     return pd.DataFrame([value], columns=["contact_syncing_enabled"])
 
 
-# 41
+def extract_linked_meta_accounts(linked_meta_accounts_dict):
+    """extract personal_information/personal_information/linked_meta_accounts -> list of connected accounts"""
+    accounts = []
+
+    for a in linked_meta_accounts_dict["profile_linked_meta_accounts"]:
+        for k in ["Art des Kontos"]:  # keys are language specific
+            if k in a["string_map_data"]:
+                account_name = a["string_map_data"][k]["value"]
+                accounts.append(account_name)
+
+    accounts_df = pd.DataFrame({"connected_accounts": accounts})
+
+    return accounts_df
+
+
 def extract_personal_information(personal_information_dict):
     """
     extract personal_information/personal_information/personal_information.json -> dummies whether user has profile image, email, phone, and private account
@@ -517,6 +531,23 @@ def extract_consents(consents_dict):
     return result
 
 
+def extract_use_crossapp_messaging(use_cross_app_messaging_dict):
+    """extract preferences/media_settings/use_cross-app_messaging_dict -> value if enabled"""
+
+    enabled = None
+
+    for a in use_cross_app_messaging_dict["settings_upgraded_to_cross_app_messaging"]:
+        for k in [
+            "Aktualisierung auf App-\u00c3\u00bcbergreifendes Messaging durchgef\u00c3\u00bchrt"
+        ]:  # keys are language specific
+            print(enabled, a["string_map_data"])
+            if k in a["string_map_data"]:
+                enabled = a["string_map_data"][k]["value"]
+                print(enabled)
+
+    return pd.DataFrame([enabled], columns=["cross_app_messaging"])
+
+
 def extract_topics_df(topics_dict):
     """extract preferences/your_topics -> list of topics"""
 
@@ -539,7 +570,7 @@ def extract_account_privacy_changes(account_privacy_changes_dict):
     timestamps = []
 
     for c in changes:
-        for k in ["Time", "Zeit"]:
+        for k in ["Time", "Zeit"]:  # keys are language specific
             if k in c["string_map_data"]:
                 timestamp = c["string_map_data"][k]["timestamp"]
                 timestamps.append(epoch_to_date(timestamp))
