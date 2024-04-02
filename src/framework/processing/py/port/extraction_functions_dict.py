@@ -111,6 +111,13 @@ extraction_dict = {
             "nl": "Inhoud zip bestand",
         },
     },
+    "linked_meta_accounts": {
+        "extraction_function": ef.extract_linked_meta_accounts,
+        "title": {
+            "en": "Which accounts are connected at Meta?",
+            "nl": "Inhoud zip bestand",
+        },
+    },
     "personal_information/personal_information.json": {
         "extraction_function": ef.extract_personal_information,
         "title": {
@@ -142,6 +149,13 @@ extraction_dict = {
     "consents": {
         "extraction_function": ef.extract_consents,
         "title": {"en": "What did you agree to when?", "nl": "Inhoud zip bestand"},
+    },
+    "use_cross-app_messaging": {
+        "extraction_function": ef.extract_use_crossapp_messaging,
+        "title": {
+            "en": "Do you use the messager for Facebook and Instagram?",
+            "nl": "Inhoud zip bestand",
+        },
     },
     "your_topics": {
         "extraction_function": ef.extract_topics_df,
