@@ -907,6 +907,51 @@ def extract_liked_posts(liked_posts_dict):
     return aggregated_df.reset_index(name="likedPosts_count")
 
 
+def extract_saved_collections(saved_collections_dict):
+    """extract your_instagram_activity/saved/saved_collections -> count per day"""
+
+    dates = []
+
+    # get list with timestamps in epoch format and skip all collection titles
+    for t in saved_collections_dict["saved_saved_collections"]:
+        for k in ["Added Time"]:  # keys are language specific
+            if k in t["string_map_data"]:
+                try:
+                    dates.append(epoch_to_date(t["string_map_data"][k]["timestamp"]))
+                except:
+                    continue
+                break
+
+    dates_df = pd.DataFrame(dates, columns=["date"])  # convert to df
+
+    aggregated_df = dates_df.groupby(["date"])[
+        "date"
+    ].size()  # count number of rows per day
+
+    return aggregated_df.reset_index(name="saved_collections_count")
+
+
+def extract_saved_posts(saved_posts_dict):
+    """extract your_instagram_activity/saved/saved_posts -> count per day"""
+
+    dates = []
+
+    # get list with timestamps in epoch format
+    for t in saved_posts_dict["saved_saved_media"]:
+        for k in ["Saved on"]:  # keys are language specific
+            if k in t["string_map_data"]:
+                dates.append(epoch_to_date(t["string_map_data"][k]["timestamp"]))
+            break
+
+    dates_df = pd.DataFrame(dates, columns=["date"])  # convert to df
+
+    aggregated_df = dates_df.groupby(["date"])[
+        "date"
+    ].size()  # count number of rows per day
+
+    return aggregated_df.reset_index(name="saved_posts_count")
+
+
 def extract_countdowns(countdowns_dict):
     """extract your_instagram_activity/story_sticker_interactions/countdowns -> count per day"""
 
