@@ -271,6 +271,20 @@ extraction_dict = {
             "nl": "Inhoud zip bestand",
         },
     },
+    "saved_collections": {
+        "extraction_function": ef.extract_saved_collections,
+        "title": {
+            "en": "How often did you save posts or reels and shared it with someone?",
+            "nl": "Inhoud zip bestand",
+        },
+    },
+    "saved_posts": {
+        "extraction_function": ef.extract_saved_posts,
+        "title": {
+            "en": "How often did you save posts or reels?",
+            "nl": "Inhoud zip bestand",
+        },
+    },
     "countdowns": {
         "extraction_function": ef.extract_countdowns,
         "title": {
