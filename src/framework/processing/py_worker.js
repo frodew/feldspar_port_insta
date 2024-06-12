@@ -1,132 +1,134 @@
-let pyScript
+let pyScript;
 
 onmessage = (event) => {
-  const { eventType } = event.data
+  const { eventType } = event.data;
   switch (eventType) {
-    case 'initialise':
+    case "initialise":
       initialise().then(() => {
-        self.postMessage({ eventType: 'initialiseDone' })
-      })
-      break
+        self.postMessage({ eventType: "initialiseDone" });
+      });
+      break;
 
-    case 'firstRunCycle':
-      pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`)
+    case "firstRunCycle":
+      pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`);
       //load vornamen.txt to use in pyodide
-      loadAndUnpackZipArchive("/vornamen.zip");
-      runCycle(null)
-      break
+      loadAndUnpackZipArchive("./vornamen.zip");
+      runCycle(null);
+      break;
 
-    case 'nextRunCycle':
-      const { response } = event.data
+    case "nextRunCycle":
+      const { response } = event.data;
       unwrap(response).then((userInput) => {
-        runCycle(userInput)
-      })
-      break
+        runCycle(userInput);
+      });
+      break;
 
     default:
-      console.log('[ProcessingWorker] Received unsupported event: ', eventType)
+      console.log("[ProcessingWorker] Received unsupported event: ", eventType);
   }
-}
+};
 
 function runCycle(payload) {
-  console.log('[ProcessingWorker] runCycle ' + JSON.stringify(payload))
-  scriptEvent = pyScript.send(payload)
+  console.log("[ProcessingWorker] runCycle " + JSON.stringify(payload));
+  scriptEvent = pyScript.send(payload);
   self.postMessage({
-    eventType: 'runCycleDone',
+    eventType: "runCycleDone",
     scriptEvent: scriptEvent.toJs({
       create_proxies: false,
-      dict_converter: Object.fromEntries
-    })
-  })
+      dict_converter: Object.fromEntries,
+    }),
+  });
 }
 
 function unwrap(response) {
-  console.log('[ProcessingWorker] unwrap response: ' + JSON.stringify(response.payload))
+  console.log(
+    "[ProcessingWorker] unwrap response: " + JSON.stringify(response.payload),
+  );
   return new Promise((resolve) => {
     switch (response.payload.__type__) {
-      case 'PayloadFile':
-        copyFileToPyFS(response.payload.value, resolve)
-        break
+      case "PayloadFile":
+        copyFileToPyFS(response.payload.value, resolve);
+        break;
 
       default:
-        resolve(response.payload)
+        resolve(response.payload);
     }
-  })
+  });
 }
 
 function copyFileToPyFS(file, resolve) {
-  directoryName = `/file-input`
-  pathStats = self.pyodide.FS.analyzePath(directoryName)
+  directoryName = `/file-input`;
+  pathStats = self.pyodide.FS.analyzePath(directoryName);
   if (!pathStats.exists) {
-    self.pyodide.FS.mkdir(directoryName)
+    self.pyodide.FS.mkdir(directoryName);
   } else {
-    self.pyodide.FS.unmount(directoryName)
+    self.pyodide.FS.unmount(directoryName);
   }
   self.pyodide.FS.mount(
     self.pyodide.FS.filesystems.WORKERFS,
     {
-      files: [file]
+      files: [file],
     },
-    directoryName
-  )
-  resolve({ __type__: 'PayloadString', value: directoryName + '/' + file.name })
+    directoryName,
+  );
+  resolve({
+    __type__: "PayloadString",
+    value: directoryName + "/" + file.name,
+  });
 }
 
 function initialise() {
-  console.log('[ProcessingWorker] initialise')
+  console.log("[ProcessingWorker] initialise");
   return startPyodide()
     .then((pyodide) => {
-      self.pyodide = pyodide
-      return loadPackages()
+      self.pyodide = pyodide;
+      return loadPackages();
     })
     .then(() => {
-      return installPortPackage()
-    })
+      return installPortPackage();
+    });
 }
 
 function startPyodide() {
-  importScripts('https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js')
+  importScripts("https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js");
 
-  console.log('[ProcessingWorker] loading Pyodide')
+  console.log("[ProcessingWorker] loading Pyodide");
   return loadPyodide({
-    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.0/full/'
-  })
+    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
+  });
 }
 
 function loadPackages() {
-  console.log('[ProcessingWorker] loading packages')
-  return self.pyodide.loadPackage(['micropip', 'numpy', 'pandas'])
+  console.log("[ProcessingWorker] loading packages");
+  return self.pyodide.loadPackage(["micropip", "numpy", "pandas"]);
 }
 
 function installPortPackage() {
-  console.log('[ProcessingWorker] load port package')
+  console.log("[ProcessingWorker] load port package");
   return self.pyodide.runPythonAsync(`
     import micropip
     await micropip.install("opencv-python")
     await micropip.install("Pillow")
     await micropip.install("../../port-0.0.0-py3-none-any.whl", deps=False)
     import port
-  `);  
+  `);
 }
 
-// add vornamen.txt-zip archive to use in pyodide 
+// add vornamen.txt-zip archive to use in pyodide
 
 async function loadAndUnpackZipArchive(zipUrl) {
-    try {
-        // Fetch the zip archive
-        let zipResponse = await fetch(zipUrl);
-        
-        // Convert binary data to ArrayBuffer
-        let zipBinary = await zipResponse.arrayBuffer();
-        
-        // Unpack the zip archive into Pyodide virtual file system
-        pyodide.unpackArchive(zipBinary, "zip");
-        
-        console.log("names-zip-file successfully unpacked.");
-        
-    } catch (error) {
+  try {
+    // Fetch the zip archive
+    let zipResponse = await fetch(zipUrl);
 
-        console.error("Error loading and unpacking names-zip-file archive:", error);
+    // Convert binary data to ArrayBuffer
+    let zipBinary = await zipResponse.arrayBuffer();
 
-    }
+    // Unpack the zip archive into Pyodide virtual file system
+    pyodide.unpackArchive(zipBinary, "zip");
+
+    console.log("names-zip-file successfully unpacked.");
+  } catch (error) {
+    console.error("Error loading and unpacking names-zip-file archive:", error);
+  }
 }
