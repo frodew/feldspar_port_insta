@@ -1,3 +1,4 @@
+from port.api.assets import *
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 import re
@@ -38,9 +39,8 @@ def split_name(name):
 
 # check if names in file
 def check_name(names_to_check):
-    with open("vornamen.txt", "r") as file:
-        # read the names from the file and create a set
-        names_set = {line.strip() for line in file}
+    # read the vornamen.txt file into names_set
+    names_set = read_asset("vornamen.txt")
 
     # check if any name in names_to_check matches the names in the file
     for name in names_to_check:
@@ -540,10 +540,8 @@ def extract_use_crossapp_messaging(use_cross_app_messaging_dict):
         for k in [
             "Aktualisierung auf App-\u00c3\u00bcbergreifendes Messaging durchgef\u00c3\u00bchrt"
         ]:  # keys are language specific
-            print(enabled, a["string_map_data"])
             if k in a["string_map_data"]:
                 enabled = a["string_map_data"][k]["value"]
-                print(enabled)
 
     return pd.DataFrame([enabled], columns=["cross_app_messaging"])
 
