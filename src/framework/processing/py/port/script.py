@@ -112,42 +112,14 @@ def process(sessionId):
 # Render pages used in step 1
 ############################
 
-def render_donation_page(body):
-    header = props.PropsUIHeader(props.Translatable({
-        "en": "Port flow example",
-        "de": "Port Beispiel",
-        "nl": "Port voorbeeld flow"
-    }))
-
-    page = props.PropsUIPageDonation("Zip", header, body)
-    return CommandUIRender(page)
-
-
-def retry_confirmation():
-    text = props.Translatable({
-        "en": "Unfortunately, we cannot process your file. Continue, if you are sure that you selected the right file. Try again to select a different file.",
-        "de": "Leider können wir Ihre Datei nicht bearbeiten. Fahren Sie fort, wenn Sie sicher sind, dass Sie die richtige Datei ausgewählt haben. Versuchen Sie, eine andere Datei auszuwählen.",
-        "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen."
-    })
-    ok = props.Translatable({
-        "en": "Try again",
-        "de": "Versuchen Sie es noch einmal",
-        "nl": "Probeer opnieuw"
-    })
-    cancel = props.Translatable({
-        "en": "Continue",
-        "de": "Weiter",
-        "nl": "Verder"
-    })
-    return props.PropsUIPromptConfirm(text, ok, cancel)
-
 
 def prompt_file(extensions):
-    description = props.Translatable({
-        "en": "Please select any zip file stored on your device.",
-        "de": "Wählen Sie eine beliebige Zip-Datei aus, die Sie auf Ihrem Gerät gespeichert haben.",
-        "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat."
-    })
+    description = props.Translatable(
+        {
+            "en": 'Please select your downloaded Instagram ZIP file from your device. The file should be named like "instagram-USERNAME-DATE-...-.zip".\nDepending on the number of pictures you have, the extraction may take some time (~ 120 pictures/minute).\nFor example, if you have posted a picture each day over the last three months, the uploading should take arould one minute.',
+            "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat.",
+        }
+    )
 
     return props.PropsUIPromptFileInput(description, extensions)
 
@@ -283,14 +255,15 @@ def extract_data(filename):
 def check_faces_in_zip(filename):
     """This function checks the number of faces in each image file within a zip file."""
 
-    table_list = []
-    i = 0
+    face_dict = {}
 
     # Load face cascade classifier
     face_cascade = cv2.CascadeClassifier(
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
 
+    # Set the desired size for the images
+    size = 200, 200
 
     # Open the zip file in read mode
     with zipfile.ZipFile(filename, "r") as zip_ref:
