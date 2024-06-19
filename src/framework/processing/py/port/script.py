@@ -113,45 +113,11 @@ def process(sessionId):
 ############################
 
 
-def render_donation_page(body):
-    header = props.PropsUIHeader(
-        props.Translatable(
-            {
-                "en": "Port flow example",
-                "de": "Port beispiel",
-                "nl": "Port voorbeeld flow",
-            }
-        )
-    )
-
-    page = props.PropsUIPageDonation("Zip", header, body)
-    return CommandUIRender(page)
-
-
-def retry_confirmation():
-    text = props.Translatable(
-        {
-            "en": "Unfortunately, we cannot process your file. Continue, if you are sure that you selected the right file. Try again to select a different file.",
-            "de": "Leider können wir Ihre Datei nicht bearbeiten. Fahren Sie fort, wenn Sie sicher sind, dass Sie die richtige Datei ausgewählt haben. Versuchen Sie erneut, eine andere Datei auszuwählen.",
-            "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen.",
-        }
-    )
-    ok = props.Translatable(
-        {
-            "en": "Try again",
-            "de": "Versuchen Sie es noch einmal",
-            "nl": "Probeer opnieuw",
-        }
-    )
-    cancel = props.Translatable({"en": "Continue", "de": "Weiter", "nl": "Verder"})
-    return props.PropsUIPromptConfirm(text, ok, cancel)
-
-
 def prompt_file(extensions):
     description = props.Translatable(
         {
             "en": "Please select any zip file stored on your device.",
-            "en": "Wählen Sie eine beliebige Zip-Datei aus, die Sie auf Ihrem Gerät gespeichert haben.",
+            "de": "Wählen Sie eine beliebige Zip-Datei aus, die Sie auf Ihrem Gerät gespeichert haben.",
             "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat.",
         }
     )
@@ -164,12 +130,15 @@ def render_donation_page(body):
 
     header = props.PropsUIHeader(
         props.Translatable(
-            {"en": "Instagram Data Donation", "nl": "Port voorbeeld flow"}
+            {
+                "en": "Instagram Data Donation",
+                "de": "Instagram Datenspende",
+                "nl": "Instagram Data Donation",
+            }
         )
     )
 
     page = props.PropsUIPageDonation(platform, header, body)
-
     return CommandUIRender(page)
 
 
@@ -177,11 +146,18 @@ def retry_confirmation_no_json():
     text = props.Translatable(
         {
             "en": 'Unfortunately, we cannot process your file. It seems like you submitted a HTML file of your Instagram data.\nPlease download your data from Instagram again and select the data format "JSON".\n The downloades file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.',
+            "de": 'Leider können wir Ihre Datei nicht verarbeiten. Es scheint so, dass Sie aus Versehen die HTML-Version beantragt haben.\nBitte beantragen Sie erneut eine Datenspende bei Instagram und wählen Sie dabei "JSON" als Dateivormat aus (wie in der Anleitung beschrieben).\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".',
             "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen.",
         }
     )
 
-    ok = props.Translatable({"en": "Try again with JSON file", "nl": "Probeer opnieuw"})
+    ok = props.Translatable(
+        {
+            "en": "Try again with JSON file",
+            "de": "Erneut versuchen mit JSON-Datei",
+            "nl": "Probeer opnieuw",
+        }
+    )
 
     return props.PropsUIPromptConfirm(text, ok)
 
@@ -190,11 +166,14 @@ def retry_confirmation_no_ddp():
     text = props.Translatable(
         {
             "en": 'Unfortunately, we cannot process your file. Did you really select your downloaded Instagram ZIP file?\nThe downloades file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.',
+            "de": 'Leider können wir Ihre Datei nicht verarbeiten. Haben Sie wirklich Ihre Instagram-Datei ausgewählt?\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".',
             "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen.",
         }
     )
 
-    ok = props.Translatable({"en": "Try again", "nl": "Probeer opnieuw"})
+    ok = props.Translatable(
+        {"en": "Try again", "de": "Erneut versuchen", "nl": "Probeer opnieuw"}
+    )
 
     return props.PropsUIPromptConfirm(text, ok)
 
