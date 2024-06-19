@@ -116,8 +116,8 @@ def process(sessionId):
 def prompt_file(extensions):
     description = props.Translatable(
         {
-            "en": "Please select any zip file stored on your device.",
-            "de": "Wählen Sie eine beliebige Zip-Datei aus, die Sie auf Ihrem Gerät gespeichert haben.",
+            "en": 'Please select your Instagram data file. The downloaded file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.\nThe data processing can take up to a minute. Please do NOT reload the page during this process.',
+            "de": 'Wählen Sie Ihre heruntergeladene Instagram-Datei aus. Die heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".\nDas Verarbeiten der Datei kann bis zu einer Minute dauern. Bitte aktualisieren Sie diese Seite währenddessen NICHT.',
             "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat.",
         }
     )
@@ -145,7 +145,7 @@ def render_donation_page(body):
 def retry_confirmation_no_json():
     text = props.Translatable(
         {
-            "en": 'Unfortunately, we cannot process your file. It seems like you submitted a HTML file of your Instagram data.\nPlease download your data from Instagram again and select the data format "JSON".\n The downloades file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.',
+            "en": 'Unfortunately, we cannot process your file. It seems like you submitted a HTML file of your Instagram data.\nPlease download your data from Instagram again and select the data format "JSON".\n The downloaded file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.',
             "de": 'Leider können wir Ihre Datei nicht verarbeiten. Es scheint so, dass Sie aus Versehen die HTML-Version beantragt haben.\nBitte beantragen Sie erneut eine Datenspende bei Instagram und wählen Sie dabei "JSON" als Dateivormat aus (wie in der Anleitung beschrieben).\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".',
             "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen.",
         }
@@ -363,14 +363,46 @@ def prompt_consent(data, meta_data):
     table_list = []
     i = 0
 
-    if data is not None:  # can happen if user submitts wrong file and still continues
+    # Initialize a list to store binary data (title and value pairs)
+    binary_data = []
+
+    if data is not None:  # can happen if user submits wrong file and still continues
         for file, v in extraction_dict.items():
-            table = props.PropsUIPromptConsentFormTable(
-                file, props.Translatable(v["title"]), data[i]
-            )
-            table_list.append(table)
+            df = data[i]
+
+            # Check if the dataframe has only one row
+            if len(df) == 1:
+                # Extract the title from the 'en' translation
+                translated_title = v["title"]["en"]
+                # Combine values from all columns into a single string
+                combined_value = " || ".join(
+                    [f"{col}: {df.iloc[0][col]}" for col in df.columns]
+                )
+                binary_data.append([translated_title, combined_value])
+            else:
+                # Directly add multi-row dataframes to the table list
+                table = props.PropsUIPromptConsentFormTable(
+                    file, props.Translatable(v["title"]), df
+                )
+                table_list.append(table)
+
             i += 1
 
+        # Create a dataframe for binary data if there are any single-row entries
+        if binary_data:
+            binary_df = pd.DataFrame(binary_data, columns=["Information", "Wert"])
+            table = props.PropsUIPromptConsentFormTable(
+                "binary_results",
+                props.Translatable(
+                    {
+                        "en": "Overview of additional data",
+                        "de": "Hier sind einige Ihrer Daten zusammengefasst",
+                        "nl": "Binary data",
+                    }
+                ),
+                binary_df,
+            )
+            table_list.append(table)
     return props.PropsUIPromptConsentForm(table_list, [])
 
 
