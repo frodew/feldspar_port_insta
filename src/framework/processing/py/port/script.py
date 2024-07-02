@@ -8,12 +8,9 @@ import zipfile
 import cv2
 from PIL import Image
 import numpy as np
-import time
-
 import pandas as pd
-import json
 import time
-
+import json
 
 ############################
 # MAIN FUNCTION INITIATING THE DONATION PROCESS
@@ -44,10 +41,23 @@ def process(sessionId):
                 meta_data.append(("debug", f"{key}: extracting file"))
 
                 # automatically extract required data
-                data = extract_data(fileResult.value)
+                extract_gen = extract_data(fileResult.value)
 
-                meta_data.append(("debug", f"{key}: extraction successful, go to consent form"))
-                data = extraction_result
+                while True:
+                    try:
+                        # Get the next progress update from the generator
+                        message, percentage, data = next(extract_gen)
+                        # Create a progress message for the UI
+                        promptMessage = prompt_extraction_message(message, percentage)
+                        # Render the progress page
+                        yield render_donation_page(promptMessage)
+                    except StopIteration:
+                        # The generator is exhausted, break the loop
+                        break
+
+                meta_data.append(
+                    ("debug", f"{key}: extraction successful, go to consent form")
+                )
                 break
 
             elif check_ddp == "invalid_no_json":
@@ -222,6 +232,17 @@ def check_if_valid_instagram_ddp(filename):
         return "invalid_file_error"
 
 
+def prompt_extraction_message(message, percentage):
+    description = props.Translatable(
+        {
+            "en": "One moment please. Information is now being extracted from the selected file.",
+            "de": "Einen Moment bitte. Es werden nun Informationen aus der ausgewählten Datei extrahiert.",
+            "nl": "Een moment geduld. Informatie wordt op dit moment uit het geselecteerde bestaand gehaald.",
+        }
+    )
+    return props.PropsUIPromptProgress(description, message, percentage)
+
+
 ############################
 # Extraction scripts
 ############################
@@ -231,12 +252,17 @@ def check_if_valid_instagram_ddp(filename):
 def extract_data(filename):
     """takes zip folder, extracts relevant json file contents, then extracts & processes relevant information and returns them as dataframes"""
 
-    # Check if and how many faces are in pictures
-    picture_info = check_faces_in_zip(filename)
-
     data = []
 
-    for file, v in extraction_dict.items():
+    # Check if and how many faces are in pictures
+    picture_info = {}
+    face_gen = check_faces_in_zip(filename)
+
+    for message, percentage, face_dict in face_gen:
+        picture_info = face_dict
+        yield message, percentage, data
+
+    for index, (file, v) in enumerate(extraction_dict.items(), start=1):
         # Extract json from file name based on "key"
         file_json = extractJsonContentFromZipFolder(filename, file)
 
@@ -262,7 +288,11 @@ def extract_data(filename):
 
         data.append(file_json_df)
 
-    return data
+        # Yield progress update
+        yield f"Extracting data from {file}", (index / len(extraction_dict)) * 100, data
+
+    # Yield final progress update and the extracted data
+    yield "Extracting of data completed", 100, data
 
 
 # Count faces for each picture
@@ -281,8 +311,9 @@ def check_faces_in_zip(filename):
 
     # Open the zip file in read mode
     with zipfile.ZipFile(filename, "r") as zip_ref:
+        total_files = len(zip_ref.namelist())
         # Iterate through each file in the zip file
-        for file in zip_ref.namelist():
+        for index, file in enumerate(zip_ref.namelist()):
             # Check if the file is a jpg image and in the media folder
             if file.lower().endswith(".jpg") and file.lower().startswith("media"):
                 # Open the image file within the zip file
@@ -317,8 +348,11 @@ def check_faces_in_zip(filename):
                     # Count faces in picture
                     face_dict[file] = len(faces)
 
+            percentage = ((index + 1) / total_files) * 100
+            yield f"Checking faces in image {file}", percentage, face_dict
+
     # Return the dictionary containing the number of faces in each image
-    return face_dict
+    yield "Checking faces in images completed", 100, face_dict
 
 
 # Exract json content from given file
