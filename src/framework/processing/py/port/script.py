@@ -29,18 +29,18 @@ def process(sessionId):
     while True:
         meta_data.append(("debug", f"{key}: prompt file"))
 
-        # allow users to only upload zip-files and render file-input page
+        # Allow users to only upload zip-files and render file-input page
         promptFile = prompt_file("application/zip")
         fileResult = yield render_donation_page(promptFile)
 
-        # if user input
+        # If user input
         if fileResult.__type__ == "PayloadString":
             check_ddp = check_if_valid_instagram_ddp(fileResult.value)
 
             if check_ddp == "valid":
                 meta_data.append(("debug", f"{key}: extracting file"))
 
-                # automatically extract required data
+                # Automatically extract required data
                 extract_gen = extract_data(fileResult.value)
 
                 while True:
@@ -103,16 +103,16 @@ def process(sessionId):
     # STEP 2: Present user their extracted data and ask for consent
 
     meta_data.append(("debug", f"{key}: prompt consent"))
-    # render donation page with extracted data
+    # Render donation page with extracted data
     prompt = prompt_consent(data, meta_data)
     consent_result = yield render_donation_page(prompt)
 
-    # send data if consent
+    # Send data if consent
     if consent_result.__type__ == "PayloadJSON":
         meta_data.append(("debug", f"{key}: donate consent data"))
         yield donate(f"{sessionId}-{key}", consent_result.value)
 
-    # send no data if no consent
+    # Send no data if no consent
     if consent_result.__type__ == "PayloadFalse":
         value = json.dumps('{"status" : "donation declined"}')
         yield donate(f"{sessionId}-{key}", value)
@@ -258,6 +258,7 @@ def extract_data(filename):
     picture_info = {}
     face_gen = check_faces_in_zip(filename)
 
+    # Generator to check if faces in picture, which also updates the progress bar
     for message, percentage, face_dict in face_gen:
         picture_info = face_dict
         yield message, percentage, data
@@ -311,9 +312,8 @@ def check_faces_in_zip(filename):
 
     # Open the zip file in read mode
     with zipfile.ZipFile(filename, "r") as zip_ref:
-        total_files = len(zip_ref.namelist())
         # Iterate through each file in the zip file
-        for index, file in enumerate(zip_ref.namelist()):
+        for index, file in enumerate(zip_ref.namelist(), start=1):
             # Check if the file is a jpg image and in the media folder
             if file.lower().endswith(".jpg") and file.lower().startswith("media"):
                 # Open the image file within the zip file
@@ -348,7 +348,7 @@ def check_faces_in_zip(filename):
                     # Count faces in picture
                     face_dict[file] = len(faces)
 
-            percentage = ((index + 1) / total_files) * 100
+            percentage = (index / len(zip_ref.namelist())) * 100
             yield f"Checking faces in image {file}", percentage, face_dict
 
     # Return the dictionary containing the number of faces in each image
