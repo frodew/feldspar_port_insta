@@ -12,7 +12,7 @@ onmessage = (event) => {
     case "firstRunCycle":
       pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`);
       //load vornamen.txt to use in pyodide
-      loadAndUnpackZipArchive("./vornamen.zip");
+      // loadAndUnpackZipArchive("./vornamen.zip");
       runCycle(null);
       break;
 
@@ -116,19 +116,19 @@ function installPortPackage() {
 
 // add vornamen.txt-zip archive to use in pyodide
 
-async function loadAndUnpackZipArchive(zipUrl) {
-  try {
-    // Fetch the zip archive
-    let zipResponse = await fetch(zipUrl);
-
-    // Convert binary data to ArrayBuffer
-    let zipBinary = await zipResponse.arrayBuffer();
-
-    // Unpack the zip archive into Pyodide virtual file system
-    pyodide.unpackArchive(zipBinary, "zip");
-
-    console.log("names-zip-file successfully unpacked.");
-  } catch (error) {
-    console.error("Error loading and unpacking names-zip-file archive:", error);
-  }
-}
+// async function loadAndUnpackZipArchive(zipUrl) {
+//   try {
+//     // Fetch the zip archive
+//     let zipResponse = await fetch(zipUrl);
+//
+//     // Convert binary data to ArrayBuffer
+//     let zipBinary = await zipResponse.arrayBuffer();
+//
+//     // Unpack the zip archive into Pyodide virtual file system
+//     pyodide.unpackArchive(zipBinary, "zip");
+//
+//     console.log("names-zip-file successfully unpacked.");
+//   } catch (error) {
+//     console.error("Error loading and unpacking names-zip-file archive:", error);
+//   }
+// }
