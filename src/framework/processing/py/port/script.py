@@ -285,15 +285,21 @@ def extract_data(filename):
                 )
 
         else:
-            file_json_df = pd.DataFrame(["file_does_not_exist"], columns=[str(file)])
+            file_json_df = pd.DataFrame(
+                ["Keine Informationen (Datei fehlt)"], columns=[str(file)]
+            )
 
         data.append(file_json_df)
 
         # Yield progress update
-        yield f"Extracting data from {file}", (index / len(extraction_dict)) * 100, data
+        yield (
+            f"Daten-Extrahierung aus der Datei: {file}",
+            (index / len(extraction_dict)) * 100,
+            data,
+        )
 
     # Yield final progress update and the extracted data
-    yield "Extracting of data completed", 100, data
+    yield "Daten-Extrahierung abgeschlossen", 100, data
 
 
 # Count faces for each picture
@@ -349,10 +355,18 @@ def check_faces_in_zip(filename):
                     face_dict[file] = len(faces)
 
             percentage = (index / len(zip_ref.namelist())) * 100
-            yield f"Checking faces in image {file}", percentage, face_dict
+            yield (
+                f"Extrahierung von Bild-Informationen: {file}",
+                percentage,
+                face_dict,
+            )
 
     # Return the dictionary containing the number of faces in each image
-    yield "Checking faces in images completed", 100, face_dict
+    yield (
+        "Extrahierung von Bild-Informationen abgeschlossen",
+        100,
+        face_dict,
+    )
 
 
 # Exract json content from given file
@@ -407,7 +421,7 @@ def prompt_consent(data, meta_data):
             # Check if the dataframe has only one row
             if len(df) == 1:
                 # Extract the title from the 'en' translation
-                translated_title = v["title"]["en"]
+                translated_title = v["title"]["de"]
                 # Combine values from all columns into a single string
                 combined_value = " || ".join(
                     [f"{col}: {df.iloc[0][col]}" for col in df.columns]
@@ -424,13 +438,13 @@ def prompt_consent(data, meta_data):
 
         # Create a dataframe for binary data if there are any single-row entries
         if binary_data:
-            binary_df = pd.DataFrame(binary_data, columns=["Information", "Wert"])
+            binary_df = pd.DataFrame(binary_data, columns=["Kategorie", "Daten"])
             table = props.PropsUIPromptConsentFormTable(
                 "binary_results",
                 props.Translatable(
                     {
                         "en": "Overview of additional data",
-                        "de": "Hier sind einige Ihrer Daten zusammengefasst",
+                        "de": "Übersicht von zusätzlichen Informationen",
                         "nl": "Binary data",
                     }
                 ),
