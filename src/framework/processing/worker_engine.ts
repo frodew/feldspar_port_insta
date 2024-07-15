@@ -5,11 +5,12 @@ export default class WorkerProcessingEngine implements ProcessingEngine {
   sessionId: String
   worker: Worker
   commandHandler: CommandHandler
+  locale: string;
 
   resolveInitialized!: () => void
   resolveContinue!: () => void
 
-  constructor (sessionId: string, worker: Worker, commandHandler: CommandHandler) {
+  constructor (sessionId: string, worker: Worker, commandHandler: CommandHandler, locale: string) {
     this.sessionId = sessionId
     this.commandHandler = commandHandler
     this.worker = worker
@@ -21,6 +22,7 @@ export default class WorkerProcessingEngine implements ProcessingEngine {
       )
       this.handleEvent(event)
     }
+    this.locale = locale;
   }
 
   sendSystemEvent (name: string): void {
@@ -74,7 +76,11 @@ export default class WorkerProcessingEngine implements ProcessingEngine {
   }
 
   firstRunCycle (): void {
-    this.worker.postMessage({ eventType: 'firstRunCycle', sessionId: this.sessionId })
+    this.worker.postMessage({
+      eventType: "firstRunCycle",
+      sessionId: this.sessionId,
+      locale: this.locale,
+    });
   }
 
   nextRunCycle (response: Response): void {

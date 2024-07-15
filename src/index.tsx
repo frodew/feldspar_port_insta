@@ -13,7 +13,7 @@ const worker = new Worker(workerFile)
 let assembly: Assembly
 
 const run = (bridge: Bridge, locale: string): void => {
-  assembly = new Assembly(worker, bridge)
+  assembly = new Assembly(worker, bridge, locale)
   assembly.visualisationEngine.start(rootElement, locale)
   assembly.processingEngine.start()
 }
@@ -25,7 +25,7 @@ if (process.env.REACT_APP_BUILD !== 'standalone' && process.env.NODE_ENV === 'pr
 } else {
   // Setup local development mode
   console.log('Running with fake bridge')
-  run(new FakeBridge(), 'en')
+  run(new FakeBridge(), 'de')
 }
 
 const observer = new ResizeObserver(() => {

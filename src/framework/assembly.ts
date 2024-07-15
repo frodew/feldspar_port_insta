@@ -9,10 +9,10 @@ export default class Assembly {
   processingEngine: ProcessingEngine
   router: CommandRouter
 
-  constructor (worker: Worker, bridge: Bridge) {
+  constructor (worker: Worker, bridge: Bridge, locale: string) {
     const sessionId = String(Date.now())
     this.visualisationEngine = new ReactEngine(new ReactFactory())
     this.router = new CommandRouter(bridge, this.visualisationEngine)
-    this.processingEngine = new WorkerProcessingEngine(sessionId, worker, this.router)
+    this.processingEngine = new WorkerProcessingEngine(sessionId, worker, this.router, locale)
   }
 }

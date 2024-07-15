@@ -10,7 +10,10 @@ onmessage = (event) => {
       break;
 
     case "firstRunCycle":
-      pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`);
+      pyScript = self.pyodide.runPython(
+        `port.start(${event.data.sessionId}, '${event.data.locale}')`,
+      );
+      // pyScript = self.pyodide.runPython(`port.start(${event.data.sessionId})`);
       //load vornamen.txt to use in pyodide
       // loadAndUnpackZipArchive("./vornamen.zip");
       runCycle(null);

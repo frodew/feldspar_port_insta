@@ -17,10 +17,11 @@ import json
 ############################
 
 
-def process(sessionId):
+def process(sessionId, locale):
     key = "instagram-data-donation"
     meta_data = []
     meta_data.append(("debug", f"{key}: start"))
+    print("xxx", locale)
 
     # STEP 1: Select DDP and extract automatically required data
 
