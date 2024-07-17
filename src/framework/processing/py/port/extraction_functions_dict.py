@@ -88,7 +88,7 @@ extraction_dict = {
         "extraction_function": ef.extract_hide_story_from,
         "title": {
             "en": "How many accounts did you hide your story from? [per day]",
-            "de": "Für wie viele Konten verbergen Sie Ihre Story? [pro Tag]",
+            "de": "Für wie viele Konten verstecken Sie Ihre Story? [pro Tag]",
             "nl": "Hoe vaak heb je je verhaal verborgen voor accounts? [per dag]",
         },
     },
@@ -175,9 +175,9 @@ extraction_dict = {
     "comments_blocked_from": {
         "extraction_function": ef.extract_comments_blocked_from,
         "title": {
-            "en": "How many accounts did you block from commenting? [per day]",
-            "de": "Wie viele Konten haben Sie blockiert, keine Kommentare mehr schreiben zu können? [pro Tag]",
-            "nl": "Hoe vaak heb je accounts geblokkeerd voor reacties? [per dag]",
+            "en": "How many accounts did you block from commenting?",
+            "de": "Wie viele Konten haben Sie blockiert, keine Kommentare mehr schreiben zu können?",
+            "nl": "Hoe vaak heb je accounts geblokkeerd voor reacties?",
         },
     },
     "consents": {

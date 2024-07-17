@@ -21,7 +21,6 @@ def process(sessionId, locale):
     key = "instagram-data-donation"
     meta_data = []
     meta_data.append(("debug", f"{key}: start"))
-    print("xxx", locale)
 
     # STEP 1: Select DDP and extract automatically required data
 
@@ -42,7 +41,7 @@ def process(sessionId, locale):
                 meta_data.append(("debug", f"{key}: extracting file"))
 
                 # Automatically extract required data
-                extract_gen = extract_data(fileResult.value)
+                extract_gen = extract_data(fileResult.value, locale)
 
                 while True:
                     try:
@@ -105,7 +104,7 @@ def process(sessionId, locale):
 
     meta_data.append(("debug", f"{key}: prompt consent"))
     # Render donation page with extracted data
-    prompt = prompt_consent(data, meta_data)
+    prompt = prompt_consent(data, meta_data, locale)
     consent_result = yield render_donation_page(prompt)
 
     # Send data if consent
@@ -250,14 +249,14 @@ def prompt_extraction_message(message, percentage):
 
 
 # Main function to process zip files
-def extract_data(filename):
+def extract_data(filename, locale):
     """takes zip folder, extracts relevant json file contents, then extracts & processes relevant information and returns them as dataframes"""
 
     data = []
 
     # Check if and how many faces are in pictures
     picture_info = {}
-    face_gen = check_faces_in_zip(filename)
+    face_gen = check_faces_in_zip(filename, locale)
 
     # Generator to check if faces in picture, which also updates the progress bar
     for message, percentage, face_dict in face_gen:
@@ -274,37 +273,82 @@ def extract_data(filename):
                 if (
                     "picture_info" in v
                 ):  # Check if picture_info is required for this extraction function
-                    file_json_df = v["extraction_function"](file_json, picture_info)
+                    file_json_df = v["extraction_function"](
+                        file_json, picture_info, locale
+                    )
                 else:
-                    file_json_df = v["extraction_function"](file_json)
+                    file_json_df = v["extraction_function"](file_json, locale)
 
             except Exception as e:
                 # if it fails for some reason
+
+                translatedMessage = props.Translatable(
+                    {
+                        "en": "extraction failed - ",
+                        "de": "Extrahierung fehlgeschlagen - ",
+                        "nl": "Extractie mislukt - ",
+                    }
+                )
+
                 file_json_df = pd.DataFrame(
-                    [f"extraction_failed__{file, type(e).__name__}"],
+                    [
+                        f"{translatedMessage.translations[locale]}{file, type(e).__name__}"
+                    ],
                     columns=[str(file)],
                 )
 
         else:
+            translatedMessage1 = props.Translatable(
+                {
+                    "en": f'(file "{str(file)}" missing)',
+                    "de": f'(Datei "{str(file)}" fehlt)',
+                    "nl": f'(bestand "{str(file)}" ontbreekt)',
+                }
+            )
+
+            translatedMessage2 = props.Translatable(
+                {
+                    "en": "No information",
+                    "de": "Keine Informationen",
+                    "nl": "Geen informatie",
+                }
+            )
+
             file_json_df = pd.DataFrame(
-                ["Keine Informationen (Datei fehlt)"], columns=[str(file)]
+                [translatedMessage1.translations[locale]],
+                columns=[translatedMessage2.translations[locale]],
             )
 
         data.append(file_json_df)
 
         # Yield progress update
+        translatedMessage = props.Translatable(
+            {
+                "en": "Data extraction from file: ",
+                "de": "Daten-Extrahierung aus der Datei: ",
+                "nl": "Gegevens extractie uit het bestand: ",
+            }
+        )
+
         yield (
-            f"Daten-Extrahierung aus der Datei: {file}",
+            f"{translatedMessage.translations[locale]}{file}",
             (index / len(extraction_dict)) * 100,
             data,
         )
 
     # Yield final progress update and the extracted data
-    yield "Daten-Extrahierung abgeschlossen", 100, data
+    translatedMessage = props.Translatable(
+        {
+            "en": "Data extraction completed",
+            "de": "Daten-Extrahierung abgeschlossen",
+            "nl": "Gegevens extractie voltooid",
+        }
+    )
+    yield f"{translatedMessage.translations[locale]}", 100, data
 
 
 # Count faces for each picture
-def check_faces_in_zip(filename):
+def check_faces_in_zip(filename, locale):
     """This function checks the number of faces in each image file within a zip file."""
 
     face_dict = {}
@@ -353,18 +397,40 @@ def check_faces_in_zip(filename):
                     )
 
                     # Count faces in picture
-                    face_dict[file] = len(faces)
+                    if len(faces) == 0:
+                        face_dict[file] = False
+                    else:
+                        face_dict[file] = True
+            else:
+                face_dict[file] = "picture_not_analyzed"
 
             percentage = (index / len(zip_ref.namelist())) * 100
+
+            translatedMessage = props.Translatable(
+                {
+                    "en": "Extraction of image information: ",
+                    "de": "Extrahierung von Bild-Informationen: ",
+                    "nl": "Extraheren van beeldinformatie: ",
+                }
+            )
+
             yield (
-                f"Extrahierung von Bild-Informationen: {file}",
+                f"{translatedMessage.translations[locale]}{file}",
                 percentage,
                 face_dict,
             )
 
     # Return the dictionary containing the number of faces in each image
+    translatedMessage = props.Translatable(
+        {
+            "en": "Extraction of image information completed",
+            "de": "Extrahierung von Bild-Informationen abgeschlossen",
+            "nl": "Extraheren van beeldinformatie voltooid",
+        }
+    )
+
     yield (
-        "Extrahierung von Bild-Informationen abgeschlossen",
+        f"{translatedMessage.translations[locale]}",
         100,
         face_dict,
     )
@@ -406,7 +472,7 @@ def extractJsonContentFromZipFolder(zip_file_path, pattern):
 
 
 # Main content of consent page: display all extracted data
-def prompt_consent(data, meta_data):
+def prompt_consent(data, meta_data, locale):
     print(meta_data)
 
     table_list = []
@@ -422,9 +488,9 @@ def prompt_consent(data, meta_data):
             # Check if the dataframe has only one row
             if len(df) == 1:
                 # Extract the title from the 'en' translation
-                translated_title = v["title"]["de"]
+                translated_title = v["title"][locale]
                 # Combine values from all columns into a single string
-                combined_value = " || ".join(
+                combined_value = " |> ".join(
                     [f"{col}: {df.iloc[0][col]}" for col in df.columns]
                 )
                 binary_data.append([translated_title, combined_value])
