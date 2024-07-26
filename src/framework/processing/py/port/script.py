@@ -126,8 +126,8 @@ def process(sessionId, locale):
 def prompt_file(extensions):
     description = props.Translatable(
         {
-            "en": 'Please select your Instagram data file. The downloaded file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.\nThe data processing can take up to a minute. Please do NOT reload the page during this process.',
-            "de": 'Wählen Sie Ihre heruntergeladene Instagram-Datei aus. Die heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".\nDas Verarbeiten der Datei kann bis zu einer Minute dauern. Bitte aktualisieren Sie diese Seite währenddessen NICHT.',
+            "en": 'Please select your Instagram data file. The downloaded file should be named like "instagram-username-date-random_combination.zip". Make sure it is a zip file.\nThe data processing can take up to a minute. Please do NOT reload the page during this process.',
+            "de": 'Wählen Sie Ihre heruntergeladene Instagram-Datei aus. Die heruntergeladene Datei sollte etwa so heißen: "instagram-ihr_nutzername-datum-zufallskombination.zip".',
             "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat.",
         }
     )
@@ -155,8 +155,8 @@ def render_donation_page(body):
 def retry_confirmation_no_json():
     text = props.Translatable(
         {
-            "en": 'Unfortunately, we cannot process your file. It seems like you submitted a HTML file of your Instagram data.\nPlease download your data from Instagram again and select the data format "JSON".\n The downloaded file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.',
-            "de": 'Leider können wir Ihre Datei nicht verarbeiten. Es scheint so, dass Sie aus Versehen die HTML-Version beantragt haben.\nBitte beantragen Sie erneut eine Datenspende bei Instagram und wählen Sie dabei "JSON" als Dateivormat aus (wie in der Anleitung beschrieben).\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".',
+            "en": 'Unfortunately, we cannot process your file. It seems like you submitted a HTML file of your Instagram data.\nPlease download your data from Instagram again and select the data format "JSON".\n The downloaded file should be named like "instagram-username-date-random_combination.zip". Make sure it is a zip file.',
+            "de": 'Leider können wir Ihre Datei nicht verarbeiten. Es scheint so, dass Sie aus Versehen die HTML-Version Ihrer Instagam-Daten beantragt haben.\nBitte beantragen Sie erneut eine Datenspende bei Instagram und wählen Sie dabei "JSON" als Dateivormat aus (wie in der Anleitung beschrieben).\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-ihr_nutzername-datum-zufallskombination.zip".',
             "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen.",
         }
     )
@@ -175,8 +175,8 @@ def retry_confirmation_no_json():
 def retry_confirmation_no_ddp():
     text = props.Translatable(
         {
-            "en": 'Unfortunately, we cannot process your file. Did you really select your downloaded Instagram ZIP file?\nThe downloades file should be named like "instagram-USERNAME-DATE-...-.zip". Make sure it is a zip file.',
-            "de": 'Leider können wir Ihre Datei nicht verarbeiten. Haben Sie wirklich Ihre Instagram-Datei ausgewählt?\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-NUTZERNAME-DATUM-...-.zip".',
+            "en": 'Unfortunately, we cannot process your file. Did you really select your downloaded Instagram ZIP file?\nThe downloades file should be named like "instagram-username-date-random_combination.zip". Make sure it is a zip file.',
+            "de": 'Leider können wir Ihre Datei nicht verarbeiten. Haben Sie wirklich Ihre Instagram-Daten ausgewählt?\nDie heruntergeladene Datei sollte etwa so heißen: "instagram-ihr_nutzername-datum-zufallskombination.zip".',
             "nl": "Helaas, kunnen we uw bestand niet verwerken. Weet u zeker dat u het juiste bestand heeft gekozen? Ga dan verder. Probeer opnieuw als u een ander bestand wilt kiezen.",
         }
     )
