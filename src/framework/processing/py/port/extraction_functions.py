@@ -1347,6 +1347,9 @@ def extract_saved_collections(saved_collections_dict, locale):
                     continue
                 break
 
+    if not dates:
+        return pd.DataFrame(['Keine Informationen: (Datei "saved_collections" hat keine Beiträge)'])
+
     dates_df = pd.DataFrame(dates, columns=[tl_date])  # convert to df
 
     aggregated_df = dates_df.groupby([tl_date])[
