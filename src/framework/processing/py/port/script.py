@@ -127,7 +127,7 @@ def prompt_file(extensions):
     description = props.Translatable(
         {
             "en": 'Please select your Instagram data file. The downloaded file should be named like "instagram-username-date-random_combination.zip". Make sure it is a zip file.\nThe data processing can take up to a minute. Please do NOT reload the page during this process.',
-            "de": 'Wählen Sie Ihre heruntergeladene Instagram-Datei aus. Die heruntergeladene Datei sollte etwa so heißen: "instagram-ihr_nutzername-datum-zufallskombination.zip".',
+            "de": 'Wählen Sie Ihre heruntergeladene Instagram-Datei aus. Die heruntergeladene Datei sollte etwa so heißen: "instagram-ihr_nutzername-datum-zufallskombination.zip" und sollte Ihnen direkt angezeigt werden oder sich im "Downloads"-Ordner befinden.',
             "nl": "Selecteer een willekeurige zip file die u heeft opgeslagen op uw apparaat.",
         }
     )
