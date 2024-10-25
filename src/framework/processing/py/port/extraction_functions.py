@@ -595,11 +595,10 @@ def extract_linked_meta_accounts(linked_meta_accounts_dict, locale):
 
     accounts = []
 
-    for a in linked_meta_accounts_dict["profile_linked_meta_accounts"]:
-        for k in ["Art des Kontos"]:  # keys are language specific
-            if k in a["string_map_data"]:
-                account_name = a["string_map_data"][k]["value"]
-                accounts.append(account_name)
+    for a in linked_meta_accounts_dict["label_values"]:
+        if "dict" in a and a["dict"]:
+            account_name = a["title"]
+            accounts.append(account_name)
 
     if not accounts:
         accounts = tl_value2
