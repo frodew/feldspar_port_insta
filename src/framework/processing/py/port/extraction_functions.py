@@ -1347,7 +1347,9 @@ def extract_saved_collections(saved_collections_dict, locale):
                 break
 
     if not dates:
-        return pd.DataFrame(['Keine Informationen: (Datei "saved_collections" hat keine Beiträge)'])
+        return pd.DataFrame(
+            ['Keine Informationen: (Datei "saved_collections" hat keine Beiträge)']
+        )
 
     dates_df = pd.DataFrame(dates, columns=[tl_date])  # convert to df
 
